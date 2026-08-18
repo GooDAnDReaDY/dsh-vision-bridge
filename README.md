@@ -11,8 +11,11 @@ When the chat model has **no vision** (e.g. `deepseek-v4-flash`) and a message c
 ## Install
 
 ```bash
-# From npm / GitHub after publishing:
-dsh plugin --profile web add dsh-vision-bridge        # or github:<user>/dsh-vision-bridge
+# From npm after publishing:
+dsh plugin --profile web add @goodandready/dsh-vision-bridge
+
+# From GitHub:
+dsh plugin --profile web add github:GooDAnDReaDY/dsh-vision-bridge
 # Locally from a checkout:
 dsh plugin --profile web add /path/to/dsh-vision-bridge
 ```
