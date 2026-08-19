@@ -4,4 +4,4 @@
 # $DSH_HOME/settings.yaml under `dsh-vision-bridge:`.
 - insert:
     - id: dsh-vision-bridge
-      name: dsh-vision-bridge
+      name: '@goodandready/dsh-vision-bridge'
