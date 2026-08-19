@@ -1,6 +1,6 @@
 {
   "name": "@goodandready/dsh-vision-bridge",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Self-owned vision bridge for DeepSeek Harness: pick the vision model yourself from the available ones. Image content blocks are rewritten into text markers at the agent boundary so text-only models never fail a turn, and a describe_image tool answers via your chosen vision model.",
   "repository": {
     "type": "git",

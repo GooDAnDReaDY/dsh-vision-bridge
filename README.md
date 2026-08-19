@@ -33,10 +33,13 @@ dsh plugin --profile web remove dsh-vision-router
 ## How it works (Hermes-style)
 
 1. An image (from you or from a tool like `generate_image`) enters the chat and is shown by the UI.
-2. **On every LLM request**, in `agent/pre-step`:
+2. **On every LLM request**, at two points:
+   - `agent/pre-step`, which sees the messages claimed from the inbox — that is, the images **you** attach. Rewriting them here puts the description into the session history, so the model still remembers the image on later turns.
+   - `llm/stream`, which sees the **whole outgoing request**. This is the net under everything else: a tool result is appended straight to the session and never passes through `pre-step`, so an image a tool produced (`generate_image`, for one) would otherwise reach the adapter untouched and fail the turn with `does not support image input`.
+3. At either point the rule is the same:
    - if the chat model is vision-capable (`inputModalities` includes `image`) — images go through as-is;
    - if the model is text-only — for each image block:
-     - already cached description (by `attachmentId`) → reuse it;
+     - already cached description (by `attachmentId` or content hash) → reuse it;
      - otherwise **automatically** call the vision model via `ctx.llm.stream`, get a description, cache it, and inject it as `[The user attached an image. Here is what it contains: ...]`.
 3. The text model reads text, not pixels. Turns never fail with `UNSUPPORTED_CONTENT`.
 4. **`describe_image`** stays available for when you need more precise details on an image (ask a model directly).
