@@ -1,26 +1,128 @@
 # dsh-vision-bridge
 
-**Vision bridge** for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (dsh) — a self-contained replacement for `dsh-vision-router`.
+**Universal vision bridge** for [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) (dsh) — a self-contained replacement for `dsh-vision-router`.
 
-When the chat model has **no vision** (e.g. `deepseek-v4-flash`) and a message contains an image, the image never reaches the text-only model. Instead, the plugin substitutes an **automatic text description from the vision model you choose** (Hermes-style). The text model just reads text and keeps the conversation going; the image stays in the session log and in the UI.
+When the chat model has **no vision** (e.g. `deepseek-v4-flash`) and a message contains an image, the image never reaches the text-only model. Instead, the plugin picks **how** to handle it — depending on the configured **mode**:
 
-- **`describe_image`** — a tool for when you need more precise details on an image (ask a model).
-- **Description cache** by `contentHash` of the bytes — an image is described once, then the previous description is reused on later turns.
-- **You pick the vision model** in **Settings → Vision** (a top-level settings section alongside General / Models / Plugins).
+- **`hybrid`** (default) — auto-rewrite image blocks into text descriptions using a vision model; tools stay available for explicit follow-ups. Identical to the legacy v0.1.x behavior.
+- **`llm`** — auto-rewrite via vision model only (the text-only model never sees raw images); tools remain callable.
+- **`tools`** — auto-rewrite is **off**. The text model must call `describe_image` (or another tool) explicitly, otherwise the adapter fails on the raw image. Useful when you want the model to decide *whether* to spend a vision call.
+
+Plus, **multi-channel endpoints**: instead of routing through one DSH-catalog model, you can chain `dsh-catalog`, `openai-compatible`, `ollama`, and `custom` (template-based) endpoints — sequential fallback, per-channel cooldown, optional placeholder on total failure, and zero-config Ollama discovery.
+
+- **`describe_image`** tool — ask the vision model about an image (attachment id or local path).
+- **Description cache** — LRU by image bytes + prompt + model + mode. Same image, same prompt, same model → 0 network calls.
+- **Settings → Vision** — pick the model, the mode, the strategy, the escalation policy, and the channels list. Test-vision button for live health checks.
 
 ## Install
 
 ```bash
-# From npm after publishing:
+# From npm:
 dsh plugin --profile web add @goodandready/dsh-vision-bridge
 
 # From GitHub:
 dsh plugin --profile web add github:GooDAnDReaDY/dsh-vision-bridge
+
 # Locally from a checkout:
 dsh plugin --profile web add /path/to/dsh-vision-bridge
 ```
 
-Restart the Web UI, open **Settings → Vision**, pick a provider and model (or leave empty — auto-picks the first vision-capable model).
+Restart the Web UI, open **Settings → Vision**.
+
+## How it works
+
+1. An image (from you or from a tool like `generate_image`) enters the chat and is shown by the UI.
+2. **On every LLM request**, at two points:
+   - `agent/pre-step`, which sees the messages claimed from the inbox — that is, the images **you** attach. Rewriting them here puts the description into the session history, so the model still remembers the image on later turns.
+   - `llm/stream`, which sees the **whole outgoing request**. This is the net under everything else: a tool result is appended straight to the session and never passes through `pre-step`, so an image a tool produced would otherwise reach the adapter untouched and fail the turn with `does not support image input`.
+3. **Mode gate** (`hybrid` / `llm` / `tools`) decides whether the rewrite runs at all. In `tools` mode the model must call `describe_image` itself.
+4. **Channel selection**: `config.channels` is tried in order. If a channel returns 4xx/timeout/failure, it enters a 60s cooldown and the next channel is tried. With `autoLocalOllama: true` (default), `http://localhost:11434` is probed at startup and prepended when reachable.
+5. **Vision model** produces a description. With `escalation: auto-escalate`, a complex image triggers a second deeper pass before substituting.
+6. **Cache** (LRU 256 entries by default) is keyed by `sha256(bytes) + prompt + model + mode`. Same image + different prompt or model → cache miss (correct).
+7. The text model reads text, not pixels. Turns never fail with `UNSUPPORTED_CONTENT`.
+8. **`describe_image`** stays available for precise follow-ups.
+
+## Settings
+
+**Settings → Vision** (top-level section):
+
+- **Mode** — `hybrid` / `llm` / `tools` (see above)
+- **Describe strategy** — `auto` / `llm` / `ocr-local` / `cache-only`. `ocr-local` and `cache-only` are reserved for the v2.0 local-OCR backend.
+- **Escalation** — `simple-only` (default, one pass) or `auto-escalate` (second deeper pass for complex images: dense text, code, UI, tables, charts)
+- **Vision provider / model** — explicit override; empty = auto-pick first vision-capable model from the configured channels
+- **Channels** — list of vision endpoints tried in order; type allow-list and field validation on save; per-channel status-dot for key presence
+- **Test vision** — runs one real call against the current channel setup and reports `OK (NNNms)` or the failure reason
+
+In `settings.yaml`:
+
+```yaml
+dsh-vision-bridge:
+  # Mode (hybrid = legacy behavior; tools = no auto-rewrite)
+  mode: hybrid
+
+  # Strategy (auto = vision LLM; ocr-local / cache-only reserved for v2.0)
+  describeStrategy: auto
+
+  # Escalation (auto-escalate = second pass on complex images)
+  escalation: simple-only
+
+  # Legacy single-channel (dsh-catalog) shortcut — equivalent to channels: [{type: 'dsh-catalog', provider, model}]
+  visionProvider: ""   # empty = auto-pick first vision-capable
+  visionModel: ""      # empty = auto-pick
+
+  # Channel list — empty = legacy auto-pick above
+  channels: []
+
+  # Per-channel behavior
+  channelFallback: sequential       # sequential | parallel-race
+  channelTimeoutMs: 30000
+  channelCooldownMs: 60000         # skip failing channel for 60s
+  channelFailureMode: placeholder   # placeholder | error
+  autoLocalOllama: true            # probe http://localhost:11434/v1 at startup
+  keysFromEnv:                     # env-var names tried when channel has no apiKey
+    - VISION_API_KEY
+    - DASHSCOPE_API_KEY
+    - OPENAI_API_KEY
+    - ZHIPUAI_API_KEY
+
+  # Sanitization + limits
+  sanitizeImages: true             # legacy field, gated by mode=tools
+  cacheEnabled: true               # LRU description cache
+  cacheMaxEntries: 256
+  maxImageBytes: 20971520
+  timeoutMs: 120000
+```
+
+### Channel examples
+
+`channels` is an ordered list. The first successful response wins; subsequent channels are tried only on failure or 4xx.
+
+```yaml
+dsh-vision-bridge:
+  channels:
+    # 1. Free local Ollama (no key, image never leaves the machine)
+    - type: ollama
+      baseURL: http://localhost:11434/v1
+      model: <OLLAMA_VL_MODEL>   # e.g. llava:13b — pick one installed locally
+
+    # 2. OpenAI-compatible endpoint (any OpenAI-format baseURL)
+    - type: openai-compatible
+      baseURL: https://<PROVIDER_HOST>/v1     # OpenRouter / vLLM / Ollama-cloud / etc.
+      apiKey: ""                              # empty = resolved from keysFromEnv
+      model: <PROVIDER_VL_MODEL_ID>
+      protocol: openai-chat                   # openai-chat | openai-responses
+
+    # 3. Custom template (placeholder substitution; see below)
+    - type: custom
+      baseURL: https://<CUSTOM_HOST>/vision
+      apiKey: ""
+      model: <CUSTOM_MODEL>
+      requestTemplate: |
+        {"model":{{model}},"messages":[{"role":"user","content":[{"type":"image_url","image_url":{"url":{{dataUrl}}}},{"type":"text","text":{{prompt}}}]}],"max_tokens":1024}
+      responsePath: choices.0.message.content
+```
+
+Custom-template placeholders are substituted unquoted — the plugin wraps them with `JSON.stringify`. Available: `{{model}}`, `{{prompt}}`, `{{image}}` (base64 only, no `data:` prefix), `{{dataUrl}}` (full `data:image/...;base64,...`), `{{mime}}`.
 
 ## Replacing `dsh-vision-router`
 
@@ -30,50 +132,25 @@ This does the same job but under your control and with your own vision model. If
 dsh plugin --profile web remove dsh-vision-router
 ```
 
-## How it works (Hermes-style)
-
-1. An image (from you or from a tool like `generate_image`) enters the chat and is shown by the UI.
-2. **On every LLM request**, at two points:
-   - `agent/pre-step`, which sees the messages claimed from the inbox — that is, the images **you** attach. Rewriting them here puts the description into the session history, so the model still remembers the image on later turns.
-   - `llm/stream`, which sees the **whole outgoing request**. This is the net under everything else: a tool result is appended straight to the session and never passes through `pre-step`, so an image a tool produced (`generate_image`, for one) would otherwise reach the adapter untouched and fail the turn with `does not support image input`.
-3. At either point the rule is the same:
-   - if the chat model is vision-capable (`inputModalities` includes `image`) — images go through as-is;
-   - if the model is text-only — for each image block:
-     - already cached description (by `attachmentId` or content hash) → reuse it;
-     - otherwise **automatically** call the vision model via `ctx.llm.stream`, get a description, cache it, and inject it as `[The user attached an image. Here is what it contains: ...]`.
-3. The text model reads text, not pixels. Turns never fail with `UNSUPPORTED_CONTENT`.
-4. **`describe_image`** stays available for when you need more precise details on an image (ask a model directly).
-
-## Settings
-
-**Settings → Vision** (top-level section):
-
-- **Provider** — the vision model's provider (from the LLM catalog).
-- **Model** — the model (only vision-capable ones are shown).
-- Empty → auto-pick the first vision model.
-
-In `settings.yaml`:
-
-```yaml
-dsh-vision-bridge:
-  visionProvider: ""   # empty = auto-pick
-  visionModel: ""      # empty = auto-pick
-  sanitizeImages: true
-  maxImageBytes: 20971520
-  timeoutMs: 120000
-```
-
 ## Structure
 
 ```
 dsh-vision-bridge/
 ├── package.json            # dsh bundle/plugin metadata + peerDependencies
 ├── cordis.patch.yml        # bundle layer: inserts the plugin row
-├── lib/index.js            # host: agent/pre-step sanitizer + describe_image + cache + model list
-├── lib/client.js           # browser: top-level Settings → Vision section
+├── lib/index.js            # host: agent/pre-step sanitizer + describe_image + channels driver + /config, /channels, /test routes
+├── lib/channels.js         # multi-channel endpoint driver (dsh-catalog / openai-compatible / ollama / custom) — pure stdlib
+├── lib/cache.js            # LRU description cache + composite key derivation
+├── lib/client.js           # browser: top-level Settings → Vision section (mode, strategy, escalation, channels, test)
 ├── README.md
 └── LICENSE                 # MIT
 ```
+
+## Compatibility notes
+
+- **Default behavior is identical to v0.1.4.** Existing users upgrading see no change unless they switch mode, add channels, or change strategy/escalation.
+- The plugin registers a top-level Settings section (`Vision`), a `composer.action` slot injection (best-effort; falls back gracefully on older DSH), and HTTP routes `/dsh-vision-bridge/config`, `/dsh-vision-bridge/channels`, `/dsh-vision-bridge/models`, `/dsh-vision-bridge/test`.
+- **No new peer dependencies.** Channel driver uses Node 22's native `fetch` and `AbortController`.
 
 ## License
 
