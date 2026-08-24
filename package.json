@@ -35,6 +35,9 @@
     "multimodal",
     "text-to-image"
   ],
+  "scripts": {
+    "test": "node --test test/regression.test.js"
+  },
   "engines": {
     "node": ">=20"
   },
