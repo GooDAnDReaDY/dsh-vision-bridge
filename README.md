@@ -27,7 +27,7 @@ dsh plugin --profile web add github:GooDAnDReaDY/dsh-vision-bridge
 dsh plugin --profile web add /path/to/dsh-vision-bridge
 ```
 
-Restart the Web UI, open **Settings → Vision**.
+Restart the Web UI, open **Plugins → Settings → vision-bridge** (collapsible card).
 
 ## How it works
 
@@ -124,6 +124,22 @@ dsh-vision-bridge:
 
 Custom-template placeholders are substituted unquoted — the plugin wraps them with `JSON.stringify`. Available: `{{model}}`, `{{prompt}}`, `{{image}}` (base64 only, no `data:` prefix), `{{dataUrl}}` (full `data:image/...;base64,...`), `{{mime}}`.
 
+## Tools
+
+Beyond `describe_image`, the plugin exposes a vision-tool suite. In `mode: tools` the model calls them explicitly; in `hybrid`/`llm` they stay available alongside auto-rewrite.
+
+**Grounding / geometry** — `vision_ground(image, target) → bbox`, `vision_crop(image, region) → bbox`, `vision_detect(image, kind) → [{label,bbox}]`, `vision_compare(images, q) → deltas`, `vision_present(path) → attachmentId`.
+
+**OCR** — `vision_ocr(image)`, `vision_long_ocr(image)` (Markdown, dedup), `vision_trace(image) → svg`, `vision_colors(image, top)`, `vision_extract_foreground(image) → bbox`.
+
+**Pixel loop** — `vision_pixel_diff(A, B) → diff`, `vision_html_screenshot(html, width, fullPage) → PNG` (headless Chrome, published), `vision_materialize(attachmentId, filename) → path`.
+
+**Video / browser** — `vision_video_describe(path, question, frames) → summary` (ffmpeg frames), `vision_page_persist(url)`, `vision_browser_snapshot/click/navigate` (stubs).
+
+`html_screenshot` requires Chrome at `/usr/bin/google-chrome` (or `CHROME_PATH`); `video_describe` requires `ffmpeg`. Both degrade to a clear note when the binary is absent.
+
+**Skill** — the bundled `vision-skills` Skill (5 playbooks: long-screenshot OCR, restore UI/graphic/structure, GUI ops) is registered via `ctx.skills`, so the model loads the matching playbook when a visual task starts.
+
 ## Replacing `dsh-vision-router`
 
 This does the same job but under your control and with your own vision model. If `dsh-vision-router` is installed, remove it:
@@ -138,10 +154,12 @@ dsh plugin --profile web remove dsh-vision-router
 dsh-vision-bridge/
 ├── package.json            # dsh bundle/plugin metadata + peerDependencies
 ├── cordis.patch.yml        # bundle layer: inserts the plugin row
-├── lib/index.js            # host: agent/pre-step sanitizer + describe_image + channels driver + /config, /channels, /test routes
-├── lib/channels.js         # multi-channel endpoint driver (dsh-catalog / openai-compatible / ollama / custom) — pure stdlib
-├── lib/cache.js            # LRU description cache + composite key derivation
-├── lib/client.js           # browser: top-level Settings → Vision section (mode, strategy, escalation, channels, test)
+├── lib/index.js            # host: pre-step sanitizer + describe_image + tools + channels + routes
+├── lib/channels.js         # multi-channel driver (dsh-catalog / openai-compatible / ollama / custom) — stdlib
+├── lib/cache.js            # LRU description cache + composite key
+├── lib/evidence.js         # persistent description store (Block 4)
+├── lib/client.js           # browser: Plugins-tab collapsible Vision card (mode/strategy/escalation/channels/bench/presets)
+├── skills/vision-skills/   # bundled Skill (5 playbooks): long-screenshot OCR, restore UI/graphic/structure, GUI ops
 ├── README.md
 └── LICENSE                 # MIT
 ```
@@ -149,8 +167,9 @@ dsh-vision-bridge/
 ## Compatibility notes
 
 - **Default behavior is identical to v0.1.4.** Existing users upgrading see no change unless they switch mode, add channels, or change strategy/escalation.
-- The plugin registers a top-level Settings section (`Vision`), a `composer.action` slot injection (best-effort; falls back gracefully on older DSH), and HTTP routes `/dsh-vision-bridge/config`, `/dsh-vision-bridge/channels`, `/dsh-vision-bridge/models`, `/dsh-vision-bridge/test`.
-- **No new peer dependencies.** Channel driver uses Node 22's native `fetch` and `AbortController`.
+- Settings moved from the sidebar to a **collapsible card in Plugins → Settings** (like Model Sync / Spendmeter). Fallback to the old sidebar section if the `settings.plugin.item` slot is absent.
+- The plugin registers a `composer.action` slot (best-effort), a bundled `vision-skills` Skill provider, and HTTP routes `/dsh-vision-bridge/config`, `/channels`, `/models`, `/test`, `/stats`, `/bench`.
+- **No new peer dependencies** (Node 22 native fetch/AbortController; Chrome/ffmpeg used only when present for `html_screenshot`/`video_describe`).
 
 ## License
 

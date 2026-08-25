@@ -1,3 +1,8 @@
+---
+name: vision-skills
+description: Playbooks for visual tasks with dsh-vision-bridge — long screenshot OCR, restore UI/graphic/structure, GUI ops. Use when the user asks to work with images.
+---
+
 # vision-skills — playbooks for visual tasks with dsh-vision-bridge
 
 When the user asks to work with images, pick the playbook that matches the intent and follow its tool order.
