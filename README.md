@@ -18,13 +18,14 @@ dsh plugin --profile web add @goodandready/dsh-vision-bridge
 
 Restart the Web UI, open **Plugins → Settings → vision-bridge** (collapsible card).
 
-## Tools (25)
+## Tools (26)
 
 ### Core
 | Tool | What it does |
 |---|---|
-| `describe_image` | Ask the vision model about an image (attachment id or local path) |
-| `read_image` | Native-shape alias — read local files through the bridge when the current model can't accept images |
+| `describe_image` | Ask the vision model about an image (attachment id, local path, or **http(s) URL**) |
+| `read_image` | Native-shape alias — read local files (or **http(s) URLs**) through the bridge when the current model can't accept images |
+| `inspect_image` | Inspect one image from an **attachment id, local path, or http(s) URL** — for follow-ups on images not attached to the conversation |
 
 ### Grounding / geometry
 | Tool | Result |
@@ -40,7 +41,7 @@ Restart the Web UI, open **Plugins → Settings → vision-bridge** (collapsible
 |---|---|
 | `vision_ocr(image)` | transcribe all visible text |
 | `vision_ocr_local(image, psm)` | **local Tesseract OCR** (no network); PSM 3/4/6/11 |
-| `vision_long_ocr(image)` | long screenshot OCR, stitched Markdown |
+| `vision_long_ocr(image)` | long screenshot OCR, stitched Markdown (120s budget, 40-chunk cap) |
 | `vision_trace(image)` | SVG vectorization |
 | `vision_colors(image, top)` | dominant colors palette |
 | `vision_extract_foreground(image)` | foreground bbox (SAM3 upgrade path) |
@@ -106,6 +107,8 @@ dsh-vision-bridge:
   channelFailureMode: placeholder    # placeholder | error
   autoLocalOllama: true
   keysFromEnv: [VISION_API_KEY, DASHSCOPE_API_KEY, OPENAI_API_KEY, ZHIPUAI_API_KEY]
+  detail: auto                     # auto | low | high — resolution hint for token economy
+  maxImagePixels: 4000000          # 4MP pixel guard; 0 disables (reject oversized with clear error)
   sanitizeImages: true
   cacheEnabled: true
   cacheMaxEntries: 256
@@ -126,9 +129,10 @@ channels:
   - type: dsh-catalog         # DSH catalog model
     provider: <provider>
     model: <model>
+    tier: 0                    # higher tier = tried first (prioritized failover)
   - type: openai-compatible   # any OpenAI-format endpoint
     baseURL: https://<HOST>/v1
-    apiKey: ""
+    apiKey: ""                 # single key, or comma-separated list (rotated on auth/rate-limit)
     model: <MODEL_ID>
     protocol: openai-chat     # openai-chat | openai-responses
   - type: ollama              # local Ollama
@@ -147,6 +151,14 @@ channels:
     responsePath: choices.0.message.content
 ```
 
+**Keys & failover:** a channel's `apiKey` (or each env var in `keysFromEnv`) may
+hold a **comma-separated list of keys**; on `401/402/403/429` the driver rotates
+to the next key and honors `Retry-After` (degrading to a short backoff when the
+header is absent). Channel `tier` orders failover — higher numbers are preferred.
+
+Content-safety rejections (provider-side moderation) are mapped to an explicit
+`VISION_CONTENT_FILTERED` error instead of a generic backend failure.
+
 ## Routes
 
 | Route | Method | Purpose |
@@ -155,9 +167,10 @@ channels:
 | `/dsh-vision-bridge/channels` | GET/POST | list/edit channels |
 | `/dsh-vision-bridge/models` | GET | list all models + vision flag |
 | `/dsh-vision-bridge/test` | POST | single end-to-end call |
-| `/dsh-vision-bridge/stats` | GET | per-channel usage stats |
+| `/dsh-vision-bridge/stats` | GET | per-channel usage stats + per-key quota label (#98) |
 | `/dsh-vision-bridge/bench` | POST | probe every channel latency |
-| `/dsh-vision-bridge/costs` | GET | token estimate per channel |
+| `/dsh-vision-bridge/doctor` | GET | vision doctor — human-readable diagnostics: channels, keys present, per-channel probe |
+| `/dsh-vision-bridge/costs` | GET | token estimate per channel (includes per-key quota breakdown) |
 | `/dsh-vision-bridge/cache` | GET/DELETE | cache inspector / clear |
 
 ## Skill
