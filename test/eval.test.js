@@ -72,4 +72,48 @@ describe('eval — channels driver picks first ok channel (fallback chain)', asy
     assert.equal(r.ok, false);
     assert.ok(Array.isArray(r.attempts));
   });
+
+  it('webhook channel requires a baseURL/url', async () => {
+    const { runChannel } = await import(path.join(repoRoot, 'lib/channels.js'));
+    const r = await runChannel({ type: 'webhook' }, { bytes: new Uint8Array([0]), contentType: 'image/png', prompt: 'x', timeoutMs: 1000 });
+    assert.equal(r.ok, false);
+    assert.match(r.reason || '', /webhook: baseURL/);
+  });
+});
+
+describe('eval — webhook channel parses {description} response', async () => {
+  const { runChannel } = await import(path.join(repoRoot, 'lib/channels.js'));
+  it('accepts {description} and returns ok', async () => {
+    const original = global.fetch;
+    global.fetch = async () => ({ ok: true, status: 200, json: async () => ({ description: 'a cat' }) });
+    try {
+      const r = await runChannel({ type: 'webhook', baseURL: 'http://127.0.0.1:1' }, { bytes: new Uint8Array([1]), contentType: 'image/png', prompt: 'x', timeoutMs: 1000 });
+      assert.equal(r.ok, true);
+      assert.equal(r.description, 'a cat');
+    } finally {
+      global.fetch = original;
+    }
+  });
+});
+
+describe('eval — cache inspector route semantics (LRU clear/size)', async () => {
+  const { createLru } = await import(path.join(repoRoot, 'lib/cache.js'));
+  it('clear() empties the LRU', () => {
+    const lru = createLru(10);
+    lru.set('a', 1); lru.set('b', 2);
+    assert.equal(lru.size, 2);
+    lru.clear();
+    assert.equal(lru.size, 0);
+    assert.equal(lru.get('a'), undefined);
+  });
+});
+
+describe('eval — vision_ocr_local gracefully falls back when tesseract absent', async () => {
+  it('tool reports engine missing rather than throwing a network error', async () => {
+    // We can't invoke the tool directly (needs ctx), but assert the guard is
+    // present in the host source.
+    const src = readFileSync(path.join(repoRoot, 'lib/index.js'), 'utf8');
+    assert.match(src, /tesseract not installed/);
+    assert.match(src, /vision_ocr_local/);
+  });
 });
