@@ -108,6 +108,7 @@ dsh-vision-bridge:
   autoLocalOllama: true
   keysFromEnv: [VISION_API_KEY, DASHSCOPE_API_KEY, OPENAI_API_KEY, ZHIPUAI_API_KEY]
   detail: auto                     # auto | low | high — resolution hint for token economy
+  stream: false                    # stream openai-compatible responses (SSE) for faster first token (#106)
   maxImagePixels: 4000000          # 4MP pixel guard; 0 disables (reject oversized with clear error)
   sanitizeImages: true
   cacheEnabled: true
@@ -167,11 +168,13 @@ Content-safety rejections (provider-side moderation) are mapped to an explicit
 | `/dsh-vision-bridge/channels` | GET/POST | list/edit channels |
 | `/dsh-vision-bridge/models` | GET | list all models + vision flag |
 | `/dsh-vision-bridge/test` | POST | single end-to-end call |
-| `/dsh-vision-bridge/stats` | GET | per-channel usage stats + per-key quota label (#98) |
-| `/dsh-vision-bridge/bench` | POST | probe every channel latency |
+| `/dsh-vision-bridge/stats` | GET | per-channel usage stats + per-key quota label (#98) + real tokens (#107) |
+| `/dsh-vision-bridge/bench` | POST | benchmark suite — 3 prompts per channel, latency + tokens (#109) |
 | `/dsh-vision-bridge/doctor` | GET | vision doctor — human-readable diagnostics: channels, keys present, per-channel probe |
-| `/dsh-vision-bridge/costs` | GET | token estimate per channel (includes per-key quota breakdown) |
+| `/dsh-vision-bridge/costs` | GET | token estimate per channel (real tokens when provider reports them) |
 | `/dsh-vision-bridge/cache` | GET/DELETE | cache inspector / clear |
+| `/dsh-vision-bridge/journal` | GET/DELETE | vision journal — audit trail of every call, filterable (#108) |
+| `/dsh-vision-bridge/batch` | POST/GET | batch with progress + cancel: POST start, GET /batch/:id poll, POST /batch/:id/cancel (#110) |
 
 ## Skill
 
@@ -187,6 +190,7 @@ dsh-vision-bridge/
 ├── lib/channels.js         # multi-channel driver (6 types) — stdlib
 ├── lib/cache.js            # LRU cache + composite key
 ├── lib/evidence.js         # persistent description store
+├── lib/journal.js          # vision journal — audit trail (#108)
 ├── lib/client.js           # browser: Plugins-tab collapsible card
 ├── skills/vision-skills/   # bundled Skill (5 playbooks)
 ├── test/regression.test.js # 32 regression tests
