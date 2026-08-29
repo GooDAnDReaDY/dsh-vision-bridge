@@ -183,6 +183,18 @@ describe('client i18n contract', () => {
     const src = readFileSync(path.join(repoRoot, 'lib/client.js'), 'utf8');
     assert.match(src, /exports\.inject\s*=\s*\[.*locale.*\]/);
   });
+  // #117: provider/model selects must use the vision-filtered `models` array,
+  // not `allModels`. Showing text-only providers/models makes the user pick a
+  // model the plugin will then reject.
+  it('client provider list is built from vision-filtered models, not allModels', () => {
+    const src = readFileSync(path.join(repoRoot, 'lib/client.js'), 'utf8');
+    // Locate the `const providers = Array.from(...)` line and assert it reads
+    // from `models`, not `allModels`. Matches both `const providers = Array.from(new Set(models.map` and the
+    // comment-preceded variant.
+    assert.match(src, /const providers = Array\.from\(new Set\(models\.map\(\(m\) => String\(m\.provider\)\)\)\)/);
+    // Defensive: the old buggy line must not reappear.
+    assert.doesNotMatch(src, /const providers = Array\.from\(new Set\(allModels\.map\(/);
+  });
 });
 
 // ── #115: imageDimensions must accept Buffer AND Uint8Array ────────────────
