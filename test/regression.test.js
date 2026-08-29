@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { imageDimensions } from '../lib/index.js';
 
 // Resolve repo root from this test file's location.
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -181,5 +182,34 @@ describe('client i18n contract', () => {
   it('client injects locale slot', () => {
     const src = readFileSync(path.join(repoRoot, 'lib/client.js'), 'utf8');
     assert.match(src, /exports\.inject\s*=\s*\[.*locale.*\]/);
+  });
+});
+
+// ── #115: imageDimensions must accept Buffer AND Uint8Array ────────────────
+// attachments.readImage may return Uint8Array; URL/path fetch returns Buffer.
+// readUInt32BE is Buffer-only, so imageDimensions must normalize at the top.
+describe('imageDimensions (#115)', () => {
+  // 1x1 transparent PNG: width=1, height=1 in IHDR (offsets 16..24, big-endian).
+  const pngBytes = Buffer.from(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+    'base64',
+  );
+
+  it('returns width/height for a Buffer (URL/path fetch path)', () => {
+    const dims = imageDimensions(pngBytes);
+    assert.deepEqual(dims, { width: 1, height: 1 });
+  });
+
+  it('returns width/height for a Uint8Array (attachment readImage path)', () => {
+    // Mirror the real shape: ctx.attachments.readImage returns a typed array
+    // backed by an ArrayBuffer. `bytes` here is a fresh Uint8Array view.
+    const u8 = new Uint8Array(pngBytes.buffer, pngBytes.byteOffset, pngBytes.byteLength);
+    const dims = imageDimensions(u8);
+    assert.deepEqual(dims, { width: 1, height: 1 });
+  });
+
+  it('returns null for inputs that are too short', () => {
+    assert.equal(imageDimensions(Buffer.alloc(0)), null);
+    assert.equal(imageDimensions(new Uint8Array(0)), null);
   });
 });
