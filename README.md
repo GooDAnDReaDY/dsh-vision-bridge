@@ -23,28 +23,30 @@
 
 ## ⚡ Overview
 
-**`dsh-vision-bridge`** is a comprehensive multimodal powerhouse for **DeepSeek Harness**. 
+**`dsh-vision-bridge`** is a comprehensive multimodal processing engine for **DeepSeek Harness**. 
 
 It solves two critical challenges:
-1. **Universal Multimodal Bridging**: When users send images, diagrams, or PDFs to **text-only LLMs** (e.g. `deepseek-v4-flash`, `deepseek-chat`), the plugin automatically intercepts the attachments, extracts rich structured visual descriptions via a configured vision backend (GPT-4o, Claude 3.5 Sonnet, Qwen2.5-VL, Gemini 2.0 Flash), and injects the evidence seamlessly into the prompt — completely preventing `does not support image input` crashes.
+1. **Universal Multimodal Bridging**: When users send images, diagrams, or PDFs to **text-only LLMs** (e.g. `deepseek-v4-flash`, `deepseek-chat`), the plugin automatically intercepts the attachments, extracts rich structured visual descriptions via configured vision channels, and injects the evidence seamlessly into the prompt — completely preventing `model does not support image input` crashes.
 2. **27 Agent Vision Tools**: Equips agents with a full suite of computer vision tools (OCR, VQA, spatial grounding, UI wireframe parsing, PDF page extraction, image diffing, and batch processing).
 
 ```mermaid
 graph LR
     subgraph Input [User Message Attachments]
-        Attach[🖼️ Images / Screenshots / PDFs] --> Check{Active Chat Model Has Vision?}
+        Attach[🖼️ Images / Screenshots / PDFs] --> Check{Active Chat Model Has Native Vision?}
     end
 
     subgraph Transparent [Transparent Vision Bridge]
         Check -->|Yes: Native VLM| Pass[Direct Model Pass-Through]
         Check -->|No: Text-Only LLM| Interceptor[Vision Bridge Interceptor]
-        Interceptor --> VisionRouter{Vision Channel Router}
-        VisionRouter -->|Channel 1| V1[GPT-4o / Claude 3.5 Sonnet]
-        VisionRouter -->|Channel 2| V2[Qwen2.5-VL / Gemini Flash]
-        VisionRouter -->|Offline OCR| V3[Local OCR Engine]
-        V1 --> Structured[Structured Visual Evidence]
-        V2 --> Structured
-        V3 --> Structured
+        Interceptor --> VisionRouter{Multi-Channel Vision Router}
+        VisionRouter -->|Type 1: dsh-catalog| C1[DSH Catalog: Any Active Vision Model]
+        VisionRouter -->|Type 2: openai-compatible| C2[OpenAI-Compatible / vLLM / SGLang]
+        VisionRouter -->|Type 3: ollama| C3[Local Ollama / Auto-Probed]
+        VisionRouter -->|Type 4: custom / webhook| C4[Custom Gateway / Webhook]
+        C1 --> Structured[Structured Visual Evidence]
+        C2 --> Structured
+        C3 --> Structured
+        C4 --> Structured
         Structured --> Fuse[Prompt Injection & Context Fusion]
     end
 
@@ -60,6 +62,23 @@ graph LR
 
 ---
 
+## 🌐 Dynamic Vision Channel Architecture
+
+Rather than hardcoding static models, `dsh-vision-bridge` dynamically discovers vision models from your catalog (`acceptsImages(model)`) and routes image queries across **5 flexible channel types**:
+
+| Channel Type (`type`) | Description | Example Configuration |
+|---|---|---|
+| `dsh-catalog` | Any vision-capable model already configured in your DSH providers | `{ type: 'dsh-catalog', provider: 'my-provider', model: 'my-vlm' }` |
+| `openai-compatible` | Direct OpenAI-format vision endpoint (vLLM, SGLang, LiteLLM, OpenRouter) | `{ type: 'openai-compatible', baseURL: 'http://localhost:8000/v1', model: '...' }` |
+| `ollama` | Local Ollama instance with automatic model discovery (`autoLocalOllama`) | `{ type: 'ollama', baseURL: 'http://localhost:11434/v1', model: '...' }` |
+| `custom` | Custom HTTP payload via user-defined `requestTemplate` and `responsePath` | `{ type: 'custom', baseURL: '...', requestTemplate: {...} }` |
+| `webhook` | Direct HTTP POST webhook | `{ type: 'webhook', baseURL: 'https://...' }` |
+
+> [!TIP]
+> **Zero-Config Local Vision**: If no channels are configured and Ollama is running locally (`localhost:11434`), `dsh-vision-bridge` automatically probes and binds to your local vision model on boot!
+
+---
+
 ## 🛠️ Complete 27 Agent Vision Tools Matrix
 
 `dsh-vision-bridge` registers 27 specialized tools in `ctx.tools`:
@@ -68,7 +87,7 @@ graph LR
 |---|---|---|
 | `describe_image` | Full semantic captioning and general description | `image_path`, `detail_level` |
 | `read_image` | Direct text reading and reading order extraction | `image_path`, `language` |
-| `vision_ocr` | High-accuracy cloud optical character recognition | `image_path`, `detect_orientation` |
+| `vision_ocr` | High-accuracy optical character recognition | `image_path`, `detect_orientation` |
 | `vision_ocr_local` | 100% offline local OCR engine | `image_path` |
 | `vision_long_ocr` | Multi-column, complex document OCR | `image_path`, `preserve_layout` |
 | `vision_pdf_pages` | PDF multi-page extraction, rendering & OCR | `pdf_path`, `pages`, `dpi` |
@@ -96,20 +115,11 @@ graph LR
 
 ---
 
-## 🌐 Vision Channels & Supported Models
-
-Configure multiple fallback vision channels in **Settings → Vision Bridge**:
-* **Channel 1 (Primary)**: `openai` (`gpt-4o`, `gpt-4o-mini`), `anthropic` (`claude-3-5-sonnet-20241022`), `gemini` (`gemini-2.0-flash`).
-* **Channel 2 (High-Speed / Low-Cost)**: `qwen` (`qwen2.5-vl-72b-instruct`), `deepinfra` (`Qwen/Qwen2-VL-7B-Instruct`), `siliconflow`.
-* **Channel 3 (Offline / Local)**: Local OCR and embedded lightweight vision endpoints.
-
----
-
 ## 📊 Performance, Caching & Cost Monitoring
 
 * **Disk LRU Evidence Cache**: Repeated images or identical screenshots are hashed and served from cache with **0 latency and $0 token cost**.
 * **Real-time Cost & Token Tracker**: Exposes usage statistics via `GET /dsh-vision-bridge/costs` and `GET /dsh-vision-bridge/stats`.
-* **Built-in Benchmark Suite**: Run latency diagnostics across all configured vision models via `GET /dsh-vision-bridge/bench`.
+* **Built-in Benchmark Suite**: Run latency diagnostics across all configured vision channels via `GET /dsh-vision-bridge/bench`.
 
 ---
 
@@ -129,17 +139,21 @@ dsh plugin --profile web add @goodandready/dsh-vision-bridge
 ```yaml
 dsh-vision-bridge:
   enabled: true
-  primaryChannel:
-    provider: openai
-    model: gpt-4o-mini
-    keyEnv: OPENAI_API_KEY
-  secondaryChannel:
-    provider: deepinfra
-    model: Qwen/Qwen2-VL-7B-Instruct
-    keyEnv: DEEPINFRA_API_KEY
+  autoLocalOllama: true
+  channels:
+    - type: dsh-catalog
+      provider: my-provider
+      model: my-vision-model
+    - type: openai-compatible
+      baseURL: http://127.0.0.1:8000/v1
+      model: vllm-vision
+      keyEnv: LOCAL_KEY
+    - type: ollama
+      baseURL: http://127.0.0.1:11434/v1
+  channelFallback: sequential
+  channelTimeoutMs: 30000
   cacheEnabled: true
   maxCacheMb: 250
-  detailLevel: auto
   pdfDpi: 200
 ```
 
@@ -149,12 +163,12 @@ dsh-vision-bridge:
 
 | Route | Method | Description |
 |---|---|---|
-| `/dsh-vision-bridge/models` | `GET` | Discovers available vision models across providers |
-| `/dsh-vision-bridge/channels` | `GET, PUT` | Inspects or updates active vision routing channels |
-| `/dsh-vision-bridge/costs` | `GET` | Returns aggregated token consumption and estimated cost |
+| `/dsh-vision-bridge/models` | `GET` | Discovers available vision models in DSH catalog (`acceptsImages`) |
+| `/dsh-vision-bridge/channels` | `GET, POST` | Inspects or updates active vision routing channels |
+| `/dsh-vision-bridge/costs` | `GET` | Returns aggregated token consumption and estimated cost per channel |
 | `/dsh-vision-bridge/cache` | `GET, DELETE` | Inspects or clears the disk visual evidence cache |
-| `/dsh-vision-bridge/stats` | `GET` | Bridge invocation statistics and error failover counters |
-| `/dsh-vision-bridge/bench` | `GET` | Latency and throughput benchmark across channels |
+| `/dsh-vision-bridge/stats` | `GET` | Channel invocation statistics, average latency, and error counters |
+| `/dsh-vision-bridge/bench` | `GET` | Latency and throughput benchmark across configured channels |
 
 ---
 

@@ -26,7 +26,7 @@
 **`dsh-vision-bridge`** — мощнейший мультимодальный комбайн для **DeepSeek Harness**.
 
 Плагин решает две ключевые задачи:
-1. **Универсальный мост зрения**: когда пользователь отправляет изображения, схемы или PDF-документы в **чисто текстовые LLM** (например, `deepseek-v4-flash`, `deepseek-chat`), плагин автоматически перехватывает вложения, запрашивает структурированное визуальное описание у выделенной Vision-модели (GPT-4o, Claude 3.5 Sonnet, Qwen2.5-VL, Gemini 2.0 Flash) и внедряет его в контекст промпта — полностью исключая ошибку `does not support image input`.
+1. **Универсальный мост зрения**: когда пользователь отправляет изображения, схемы или PDF-документы в **чисто текстовые LLM** (например, `deepseek-v4-flash`, `deepseek-chat`), плагин автоматически перехватывает вложения, запрашивает структурированное визуальное описание у настроенных каналов зрения и внедряет его в контекст промпта — полностью исключая ошибку `model does not support image input`.
 2. **27 инструментов компьютерного зрения для агента**: даёт агентам богатый набор тулов (OCR, VQA, координатное заземление, парсинг UI-интерфейсов, извлечение страниц PDF, пиксельный diff и батч-обработка).
 
 ```mermaid
@@ -39,12 +39,14 @@ graph LR
         Check -->|Да: Нативная VLM| Pass[Прямой запрос к модели]
         Check -->|Нет: Текстовая LLM| Interceptor[Перехватчик Vision Bridge]
         Interceptor --> VisionRouter{Маршрутизатор каналов зрения}
-        VisionRouter -->|Канал 1| V1[GPT-4o / Claude 3.5 Sonnet]
-        VisionRouter -->|Канал 2| V2[Qwen2.5-VL / Gemini Flash]
-        VisionRouter -->|Оффлайн OCR| V3[Локальный движок OCR]
-        V1 --> Structured[Структурированные визуальные улики]
-        V2 --> Structured
-        V3 --> Structured
+        VisionRouter -->|Тип 1: dsh-catalog| C1[Каталог DSH: любая активная Vision-модель]
+        VisionRouter -->|Тип 2: openai-compatible| C2[OpenAI-совместимый эндпоинт / vLLM / SGLang]
+        VisionRouter -->|Тип 3: ollama| C3[Локальная Ollama / Автопоиск]
+        VisionRouter -->|Тип 4: custom / webhook| C4[Кастомный шлюз / Вебхук]
+        C1 --> Structured[Структурированные визуальные улики]
+        C2 --> Structured
+        C3 --> Structured
+        C4 --> Structured
         Structured --> Fuse[Инъекция в промпт и слияние контекста]
     end
 
@@ -60,6 +62,23 @@ graph LR
 
 ---
 
+## 🌐 Архитектура динамических каналов зрения
+
+Вместо привязки к жестко зашитым именам, `dsh-vision-bridge` динамически обнаруживает любые модели с поддержкой зрения в каталоге (`acceptsImages(model)`) и поддерживает **5 типов каналов**:
+
+| Тип канала (`type`) | Назначение | Пример конфигурации |
+|---|---|---|
+| `dsh-catalog` | Любая Vision-модель, подключённая в провайдерах DSH | `{ type: 'dsh-catalog', provider: 'my-provider', model: 'my-vlm' }` |
+| `openai-compatible` | Прямой OpenAI-совместимый эндпоинт (vLLM, SGLang, LiteLLM, OpenRouter) | `{ type: 'openai-compatible', baseURL: 'http://localhost:8000/v1', model: '...' }` |
+| `ollama` | Локальный инстанс Ollama с авто-обнаружением (`autoLocalOllama`) | `{ type: 'ollama', baseURL: 'http://localhost:11434/v1', model: '...' }` |
+| `custom` | Пользовательский HTTP-запрос по шаблону `requestTemplate` | `{ type: 'custom', baseURL: '...', requestTemplate: {...} }` |
+| `webhook` | Прямой вызов HTTP POST вебхука | `{ type: 'webhook', baseURL: 'https://...' }` |
+
+> [!TIP]
+> **Автоопределение локальной Ollama**: если каналы не настроены, а на `localhost:11434` запущена Ollama, плагин автоматически найдёт и подключит локальную Vision-модель при старте!
+
+---
+
 ## 🛠️ Полная таблица 27 инструментов агента
 
 `dsh-vision-bridge` регистрирует 27 специализированных инструментов в `ctx.tools`:
@@ -68,7 +87,7 @@ graph LR
 |---|---|---|
 | `describe_image` | Общее смысловое описание и аннотирование изображения | `image_path`, `detail_level` |
 | `read_image` | Прямое чтение текста с сохранением естественного порядка | `image_path`, `language` |
-| `vision_ocr` | Высокоточное облачное оптическое распознавание символов | `image_path`, `detect_orientation` |
+| `vision_ocr` | Высокоточное оптическое распознавание символов | `image_path`, `detect_orientation` |
 | `vision_ocr_local` | 100% оффлайн локальный движок OCR | `image_path` |
 | `vision_long_ocr` | Распознавание сложных многоколоночных документов | `image_path`, `preserve_layout` |
 | `vision_pdf_pages` | Извлечение страниц PDF, постраничный рендеринг и OCR | `pdf_path`, `pages`, `dpi` |
@@ -96,20 +115,11 @@ graph LR
 
 ---
 
-## 🌐 Каналы зрения и поддерживаемые модели
-
-Настройте приоритетные каналы в **Настройки → Vision Bridge**:
-* **Канал 1 (Основной)**: `openai` (`gpt-4o`, `gpt-4o-mini`), `anthropic` (`claude-3-5-sonnet-20241022`), `gemini` (`gemini-2.0-flash`).
-* **Канал 2 (Скоростной / Экономичный)**: `qwen` (`qwen2.5-vl-72b-instruct`), `deepinfra` (`Qwen/Qwen2-VL-7B-Instruct`), `siliconflow`.
-* **Канал 3 (Оффлайн)**: локальный движок OCR.
-
----
-
 ## 📊 Производительность, кэширование и учёт затрат
 
 * **Дисковый LRU-кэш улик**: одинаковые скриншоты мгновенно отдаются из кэша с **0 мс задержки и 0 затрат токенов**.
 * **Мониторинг расходов**: статистика токенов и затрат доступна через `GET /dsh-vision-bridge/costs` и `GET /dsh-vision-bridge/stats`.
-* **Встроенный бенчмарк**: тестирование задержек моделей через `GET /dsh-vision-bridge/bench`.
+* **Встроенный бенчмарк**: тестирование задержек каналов через `GET /dsh-vision-bridge/bench`.
 
 ---
 
@@ -126,17 +136,21 @@ dsh plugin --profile web add @goodandready/dsh-vision-bridge
 ```yaml
 dsh-vision-bridge:
   enabled: true
-  primaryChannel:
-    provider: openai
-    model: gpt-4o-mini
-    keyEnv: OPENAI_API_KEY
-  secondaryChannel:
-    provider: deepinfra
-    model: Qwen/Qwen2-VL-7B-Instruct
-    keyEnv: DEEPINFRA_API_KEY
+  autoLocalOllama: true
+  channels:
+    - type: dsh-catalog
+      provider: my-provider
+      model: my-vision-model
+    - type: openai-compatible
+      baseURL: http://127.0.0.1:8000/v1
+      model: vllm-vision
+      keyEnv: LOCAL_KEY
+    - type: ollama
+      baseURL: http://127.0.0.1:11434/v1
+  channelFallback: sequential
+  channelTimeoutMs: 30000
   cacheEnabled: true
   maxCacheMb: 250
-  detailLevel: auto
   pdfDpi: 200
 ```
 
