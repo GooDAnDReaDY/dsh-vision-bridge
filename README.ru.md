@@ -26,7 +26,7 @@
 **`dsh-vision-bridge`** — мощнейший мультимодальный комбайн для **DeepSeek Harness**.
 
 Плагин решает две ключевые задачи:
-1. **Универсальный мост зрения**: когда пользователь отправляет изображения, схемы или PDF-документы в **чисто текстовые LLM** (например, `deepseek-v4-flash`, `deepseek-chat`), плагин автоматически перехватывает вложения, запрашивает структурированное визуальное описание у настроенных каналов зрения и внедряет его в контекст промпта — полностью исключая ошибку `model does not support image input`.
+1. **Универсальный мост зрения**: когда пользователь отправляет изображения, схемы или PDF-документы в **чисто текстовые LLM**, плагин автоматически перехватывает вложения, запрашивает структурированное визуальное описание у настроенных каналов зрения и внедряет его в контекст промпта — полностью исключая ошибку `model does not support image input`.
 2. **27 инструментов компьютерного зрения для агента**: даёт агентам богатый набор тулов (OCR, VQA, координатное заземление, парсинг UI-интерфейсов, извлечение страниц PDF, пиксельный diff и батч-обработка).
 
 ```mermaid
@@ -39,8 +39,8 @@ graph LR
         Check -->|Да: Нативная VLM| Pass[Прямой запрос к модели]
         Check -->|Нет: Текстовая LLM| Interceptor[Перехватчик Vision Bridge]
         Interceptor --> VisionRouter{Маршрутизатор каналов зрения}
-        VisionRouter -->|Тип 1: dsh-catalog| C1[Каталог DSH: любая активная Vision-модель]
-        VisionRouter -->|Тип 2: openai-compatible| C2[OpenAI-совместимый эндпоинт / vLLM / SGLang]
+        VisionRouter -->|Тип 1: dsh-catalog| C1[Каталог DSH: активные Vision-модели]
+        VisionRouter -->|Тип 2: openai-compatible| C2[OpenAI-совместимые эндпоинты]
         VisionRouter -->|Тип 3: ollama| C3[Локальная Ollama / Автопоиск]
         VisionRouter -->|Тип 4: custom / webhook| C4[Кастомный шлюз / Вебхук]
         C1 --> Structured[Структурированные визуальные улики]
@@ -64,12 +64,12 @@ graph LR
 
 ## 🌐 Архитектура динамических каналов зрения
 
-Вместо привязки к жестко зашитым именам, `dsh-vision-bridge` динамически обнаруживает любые модели с поддержкой зрения в каталоге (`acceptsImages(model)`) и поддерживает **5 типов каналов**:
+Вместо привязки к конкретным моделям, `dsh-vision-bridge` динамически обнаруживает любые модели с поддержкой зрения в каталоге (`acceptsImages(model)`) и поддерживает **5 универсальных типов каналов**:
 
 | Тип канала (`type`) | Назначение | Пример конфигурации |
 |---|---|---|
-| `dsh-catalog` | Любая Vision-модель, подключённая в провайдерах DSH | `{ type: 'dsh-catalog', provider: 'my-provider', model: 'my-vlm' }` |
-| `openai-compatible` | Прямой OpenAI-совместимый эндпоинт (vLLM, SGLang, LiteLLM, OpenRouter) | `{ type: 'openai-compatible', baseURL: 'http://localhost:8000/v1', model: '...' }` |
+| `dsh-catalog` | Любая Vision-модель, подключённая в провайдерах DSH | `{ type: 'dsh-catalog', provider: 'provider-id', model: 'model-id' }` |
+| `openai-compatible` | Прямой OpenAI-совместимый эндпоинт (локальный движок, шлюз) | `{ type: 'openai-compatible', baseURL: 'http://localhost:8000/v1', model: '...' }` |
 | `ollama` | Локальный инстанс Ollama с авто-обнаружением (`autoLocalOllama`) | `{ type: 'ollama', baseURL: 'http://localhost:11434/v1', model: '...' }` |
 | `custom` | Пользовательский HTTP-запрос по шаблону `requestTemplate` | `{ type: 'custom', baseURL: '...', requestTemplate: {...} }` |
 | `webhook` | Прямой вызов HTTP POST вебхука | `{ type: 'webhook', baseURL: 'https://...' }` |
@@ -143,8 +143,8 @@ dsh-vision-bridge:
       model: my-vision-model
     - type: openai-compatible
       baseURL: http://127.0.0.1:8000/v1
-      model: vllm-vision
-      keyEnv: LOCAL_KEY
+      model: my-model
+      keyEnv: API_KEY_ENV
     - type: ollama
       baseURL: http://127.0.0.1:11434/v1
   channelFallback: sequential

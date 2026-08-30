@@ -26,7 +26,7 @@
 **`dsh-vision-bridge`** is a comprehensive multimodal processing engine for **DeepSeek Harness**. 
 
 It solves two critical challenges:
-1. **Universal Multimodal Bridging**: When users send images, diagrams, or PDFs to **text-only LLMs** (e.g. `deepseek-v4-flash`, `deepseek-chat`), the plugin automatically intercepts the attachments, extracts rich structured visual descriptions via configured vision channels, and injects the evidence seamlessly into the prompt — completely preventing `model does not support image input` crashes.
+1. **Universal Multimodal Bridging**: When users send images, diagrams, or PDFs to **text-only LLMs**, the plugin automatically intercepts the attachments, extracts rich structured visual descriptions via configured vision channels, and injects the evidence seamlessly into the prompt — completely preventing `model does not support image input` crashes.
 2. **27 Agent Vision Tools**: Equips agents with a full suite of computer vision tools (OCR, VQA, spatial grounding, UI wireframe parsing, PDF page extraction, image diffing, and batch processing).
 
 ```mermaid
@@ -39,8 +39,8 @@ graph LR
         Check -->|Yes: Native VLM| Pass[Direct Model Pass-Through]
         Check -->|No: Text-Only LLM| Interceptor[Vision Bridge Interceptor]
         Interceptor --> VisionRouter{Multi-Channel Vision Router}
-        VisionRouter -->|Type 1: dsh-catalog| C1[DSH Catalog: Any Active Vision Model]
-        VisionRouter -->|Type 2: openai-compatible| C2[OpenAI-Compatible / vLLM / SGLang]
+        VisionRouter -->|Type 1: dsh-catalog| C1[DSH Catalog Vision Models]
+        VisionRouter -->|Type 2: openai-compatible| C2[OpenAI-Compatible Endpoints]
         VisionRouter -->|Type 3: ollama| C3[Local Ollama / Auto-Probed]
         VisionRouter -->|Type 4: custom / webhook| C4[Custom Gateway / Webhook]
         C1 --> Structured[Structured Visual Evidence]
@@ -64,12 +64,12 @@ graph LR
 
 ## 🌐 Dynamic Vision Channel Architecture
 
-Rather than hardcoding static models, `dsh-vision-bridge` dynamically discovers vision models from your catalog (`acceptsImages(model)`) and routes image queries across **5 flexible channel types**:
+Rather than requiring specific model configurations, `dsh-vision-bridge` dynamically discovers all vision-capable models from your active catalog (`acceptsImages(model)`) and routes image queries across **5 flexible channel types**:
 
 | Channel Type (`type`) | Description | Example Configuration |
 |---|---|---|
-| `dsh-catalog` | Any vision-capable model already configured in your DSH providers | `{ type: 'dsh-catalog', provider: 'my-provider', model: 'my-vlm' }` |
-| `openai-compatible` | Direct OpenAI-format vision endpoint (vLLM, SGLang, LiteLLM, OpenRouter) | `{ type: 'openai-compatible', baseURL: 'http://localhost:8000/v1', model: '...' }` |
+| `dsh-catalog` | Any vision-capable model already configured in your DSH providers | `{ type: 'dsh-catalog', provider: 'provider-id', model: 'model-id' }` |
+| `openai-compatible` | Direct OpenAI-format vision endpoint (e.g. local engine, gateway) | `{ type: 'openai-compatible', baseURL: 'http://localhost:8000/v1', model: '...' }` |
 | `ollama` | Local Ollama instance with automatic model discovery (`autoLocalOllama`) | `{ type: 'ollama', baseURL: 'http://localhost:11434/v1', model: '...' }` |
 | `custom` | Custom HTTP payload via user-defined `requestTemplate` and `responsePath` | `{ type: 'custom', baseURL: '...', requestTemplate: {...} }` |
 | `webhook` | Direct HTTP POST webhook | `{ type: 'webhook', baseURL: 'https://...' }` |
@@ -146,8 +146,8 @@ dsh-vision-bridge:
       model: my-vision-model
     - type: openai-compatible
       baseURL: http://127.0.0.1:8000/v1
-      model: vllm-vision
-      keyEnv: LOCAL_KEY
+      model: my-model
+      keyEnv: API_KEY_ENV
     - type: ollama
       baseURL: http://127.0.0.1:11434/v1
   channelFallback: sequential

@@ -26,7 +26,7 @@
 **`dsh-vision-bridge`** 是为 **DeepSeek Harness** 量身定制的全能多模态视觉处理中枢。
 
 它彻底解决了两大核心场景痛点：
-1. **通用多模态视觉桥接**：当用户向**纯文本大模型**（如 `deepseek-v4-flash`、`deepseek-chat`）发送图片、截图或 PDF 时，插件在请求发出前自动拦截附件，调度独立配置的多通道路由提取高保真结构化图文描述并无缝融合至 Prompt 中，彻底杜绝 `does not support image input` 报错。
+1. **通用多模态视觉桥接**：当用户向**纯文本大模型**发送图片、截图或 PDF 时，插件在请求发出前自动拦截附件，调度独立配置的多通道路由提取高保真结构化图文描述并无缝融合至 Prompt 中，彻底杜绝 `model does not support image input` 报错。
 2. **27 项专属视觉工具矩阵**：为智能体赋予全套视觉感知工具（OCR、VQA、空间坐标定位、UI 原型分析、PDF 多页解析、图片对比及批量处理）。
 
 ```mermaid
@@ -39,8 +39,8 @@ graph LR
         Check -->|原生支持 VLM| Pass[直接穿透提交模型]
         Check -->|不支持: 纯文本模型| Interceptor[视觉桥接拦截器]
         Interceptor --> VisionRouter{多通道视觉路由器}
-        VisionRouter -->|通道类型 1: dsh-catalog| C1[DSH 目录: 任意当前活跃视觉大模型]
-        VisionRouter -->|通道类型 2: openai-compatible| C2[OpenAI 规范接口 / vLLM / SGLang]
+        VisionRouter -->|通道类型 1: dsh-catalog| C1[DSH 目录视觉模型]
+        VisionRouter -->|通道类型 2: openai-compatible| C2[OpenAI 规范视觉接口]
         VisionRouter -->|通道类型 3: ollama| C3[本地 Ollama / 自动探测]
         VisionRouter -->|通道类型 4: custom / webhook| C4[自定义网关 / Webhook 接口]
         C1 --> Structured[结构化视觉特征]
@@ -64,12 +64,12 @@ graph LR
 
 ## 🌐 动态视觉通道架构 (5 大通道类型)
 
-`dsh-vision-bridge` 不绑定任何静态模型名称，而是从 DSH 模型目录中动态发现所有视觉模型 (`acceptsImages(model)`)，并支持 5 种通道类型：
+`dsh-vision-bridge` 不强制绑定任何静态模型名称，而是从 DSH 模型目录中动态发现所有视觉模型 (`acceptsImages(model)`)，并支持 5 种通道类型：
 
 | 通道类型 (`type`) | 功能说明 | 配置示例 |
 |---|---|---|
-| `dsh-catalog` | DSH 已配置的任意上游视觉模型 | `{ type: 'dsh-catalog', provider: 'my-provider', model: 'my-vlm' }` |
-| `openai-compatible` | 标准 OpenAI 格式视觉接口 (vLLM, SGLang, LiteLLM, OpenRouter) | `{ type: 'openai-compatible', baseURL: 'http://localhost:8000/v1', model: '...' }` |
+| `dsh-catalog` | DSH 已配置的任意上游视觉模型 | `{ type: 'dsh-catalog', provider: 'provider-id', model: 'model-id' }` |
+| `openai-compatible` | 标准 OpenAI 格式视觉接口 (如本地推理引擎或网关) | `{ type: 'openai-compatible', baseURL: 'http://localhost:8000/v1', model: '...' }` |
 | `ollama` | 本地 Ollama 实例并支持自动探针 (`autoLocalOllama`) | `{ type: 'ollama', baseURL: 'http://localhost:11434/v1', model: '...' }` |
 | `custom` | 基于 `requestTemplate` 与 `responsePath` 的自定义 HTTP 协议 | `{ type: 'custom', baseURL: '...', requestTemplate: {...} }` |
 | `webhook` | 专用 HTTP POST Webhook | `{ type: 'webhook', baseURL: 'https://...' }` |
