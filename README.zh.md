@@ -2,7 +2,7 @@
 
 <div align="center">
 
-<h3>Universal Vision Bridge & Multimodal Routing Adapter for Text-Only LLMs</h3>
+<h3>DeepSeek Harness 通用视觉桥接与纯文本大模型多模态适配插件</h3>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@goodandready/dsh-vision-bridge"><img src="https://img.shields.io/npm/v/@goodandready/dsh-vision-bridge.svg?style=for-the-badge&color=6366f1&labelColor=1e1b4b" alt="npm version"></a>
@@ -21,23 +21,23 @@
 
 ---
 
-## ⚡ Overview
+## ⚡ 插件概览
 
-**`dsh-vision-bridge`** prevents chat session crashes when users attach images to text-only LLMs (e.g. `deepseek-v4-flash`). It automatically intercepts images, extracts rich structured visual descriptions via a dedicated vision model (GPT-4o, Claude 3.5 Sonnet, Qwen-VL), and fuses the result into the prompt.
+**`dsh-vision-bridge`** 解决用户向纯文本大模型（如 `deepseek-v4-flash`）发送图片导致的会话中断问题。自动调用独立视觉模型提取结构化图文描述并无缝拼接至 Prompt 中。
 
 ```mermaid
 graph LR
-    User[👤 User Uploads Image] --> Intercept{Chat Model Has Vision?}
-    Intercept -->|Yes| Direct[Direct Model Inference]
-    Intercept -->|No: Text-Only| Bridge[Vision Bridge Adapter]
-    Bridge --> VLM[Dedicated Vision Model GPT-4o / Qwen-VL]
-    VLM --> Fusion[Inject Structured Visual Description]
-    Fusion --> TextLLM[Text-Only LLM Inference]
+    User[👤 用户上传图片附件] --> Intercept{当前模型是否支持视觉?}
+    Intercept -->|支持| Direct[直接提交模型处理]
+    Intercept -->|不支持: 纯文本| Bridge[视觉桥接适配器]
+    Bridge --> VLM[专属视觉大模型 GPT-4o / Qwen-VL]
+    VLM --> Fusion[结构化视觉特征融合]
+    Fusion --> TextLLM[纯文本模型顺畅推理]
 ```
 
 ---
 
-## 📦 Quick Installation
+## 📦 安装指南
 
 ```bash
 dsh plugin --profile web add @goodandready/dsh-vision-bridge
@@ -45,6 +45,6 @@ dsh plugin --profile web add @goodandready/dsh-vision-bridge
 
 ---
 
-## 📄 License
+## 📄 开源协议
 
 MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)
