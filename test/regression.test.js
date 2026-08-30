@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
 import { imageDimensions } from '../lib/index.js';
@@ -223,5 +223,25 @@ describe('imageDimensions (#115)', () => {
   it('returns null for inputs that are too short', () => {
     assert.equal(imageDimensions(Buffer.alloc(0)), null);
     assert.equal(imageDimensions(new Uint8Array(0)), null);
+  });
+});
+
+// ── #119: dead-code Block D — ctx.skills.registerProvider is a no-op ───────
+// DSH 0.1.2-alpha.1 does not expose a Skill provider registration API, so the
+// Block-D block was a silent no-op (optional chain hid the missing method).
+// Removing it: no registerProvider call, no visionSkillProvider object.
+describe('skill provider registration (#119)', () => {
+  it('lib/index.js does not call ctx.skills.registerProvider', () => {
+    const src = readFileSync(path.join(repoRoot, 'lib/index.js'), 'utf8');
+    // Match both safe (`?.`) and unsafe (`.`) access — neither is in the source now.
+    assert.doesNotMatch(src, /ctx\.skills\??\.registerProvider/);
+  });
+  it('lib/index.js does not define visionSkillProvider', () => {
+    const src = readFileSync(path.join(repoRoot, 'lib/index.js'), 'utf8');
+    assert.doesNotMatch(src, /visionSkillProvider/);
+  });
+  it('skills/vision-skills/ directory still ships (kept for future real API)', () => {
+    const exists = existsSync(path.join(repoRoot, 'skills/vision-skills/SKILL.md'));
+    assert.equal(exists, true);
   });
 });
