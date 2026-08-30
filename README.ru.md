@@ -25,46 +25,60 @@
 
 **`dsh-vision-bridge`** — мощнейший мультимодальный комбайн для **DeepSeek Harness**.
 
-Плагин решает две ключевые задачи:
+Плагин решает три ключевые задачи:
 1. **Универсальный мост зрения**: когда пользователь отправляет изображения, схемы или PDF-документы в **чисто текстовые LLM**, плагин автоматически перехватывает вложения, запрашивает структурированное визуальное описание у настроенных каналов зрения и внедряет его в контекст промпта — полностью исключая ошибку `model does not support image input`.
-2. **27 инструментов компьютерного зрения для агента**: даёт агентам богатый набор тулов (OCR, VQA, координатное заземление, парсинг UI-интерфейсов, извлечение страниц PDF, пиксельный diff и батч-обработка).
+2. **Выбор отдельной Vision-модели**: позволяет назначить **отдельную специализированную Vision-модель** под задачи зрения, освобождая основную модель чата для чисто текстовых рассуждений и быстрой генерации.
+3. **27 инструментов компьютерного зрения для агента**: даёт агентам богатый набор тулов (OCR, VQA, координатное заземление, парсинг UI-интерфейсов, извлечение страниц PDF, пиксельный diff и батч-обработка).
 
 ```mermaid
 graph LR
-    subgraph Input [Вложения в сообщении]
-        Attach[🖼️ Изображения / Скриншоты / PDF] --> Check{Модель чата поддерживает зрение?}
+    subgraph UserTurn [Входящее сообщение]
+        Attach[🖼️ Изображение / Скриншот / PDF] --> Check{Модель чата поддерживает зрение?}
     end
 
-    subgraph Transparent [Прозрачный мост зрения]
+    subgraph DedicatedVision [Слой обработки выделенной Vision-модели]
         Check -->|Да: Нативная VLM| Pass[Прямой запрос к модели]
         Check -->|Нет: Текстовая LLM| Interceptor[Перехватчик Vision Bridge]
-        Interceptor --> VisionRouter{Маршрутизатор каналов зрения}
-        VisionRouter -->|Тип 1: dsh-catalog| C1[Каталог DSH: активные Vision-модели]
-        VisionRouter -->|Тип 2: openai-compatible| C2[OpenAI-совместимые эндпоинты]
-        VisionRouter -->|Тип 3: ollama| C3[Локальная Ollama / Автопоиск]
-        VisionRouter -->|Тип 4: custom / webhook| C4[Кастомный шлюз / Вебхук]
-        C1 --> Structured[Структурированные визуальные улики]
-        C2 --> Structured
-        C3 --> Structured
-        C4 --> Structured
+        Interceptor --> Pick{Выбор отдельной Vision-модели}
+        Pick -->|Автопоиск| AutoVLM[Первая Vision-модель из каталога]
+        Pick -->|Явный выбор| UserVLM[Назначенная отдельная Vision-модель]
+        Pick -->|Цепочка каналов| Channels[Маршрутизатор: Ollama / Webhook]
+        AutoVLM --> Structured[Структурированные визуальные улики]
+        UserVLM --> Structured
+        Channels --> Structured
         Structured --> Fuse[Инъекция в промпт и слияние контекста]
     end
 
-    subgraph Execution [Генерация ответа]
-        Pass --> LLM[Ответ модели в диалоге]
+    subgraph ChatLLM [Основная модель чата]
+        Pass --> LLM[Быстрые рассуждения текстовой LLM]
         Fuse --> LLM
     end
 
-    style Input fill:#1e1e2e,stroke:#89b4fa,stroke-width:2px,color:#cdd6f4
-    style Transparent fill:#181825,stroke:#cba6f7,stroke-width:2px,color:#cdd6f4
-    style Execution fill:#11111b,stroke:#a6e3a1,stroke-width:2px,color:#cdd6f4
+    style UserTurn fill:#1e1e2e,stroke:#89b4fa,stroke-width:2px,color:#cdd6f4
+    style DedicatedVision fill:#181825,stroke:#cba6f7,stroke-width:2px,color:#cdd6f4
+    style ChatLLM fill:#11111b,stroke:#a6e3a1,stroke-width:2px,color:#cdd6f4
 ```
+
+---
+
+## 🎯 Выбор отдельной Vision-модели и режимы работы моста
+
+Вы можете полностью разделить **модель для диалога** и **модель для зрения**:
+
+### 1. Выбор отдельной модели зрения (`visionProvider` и `visionModel`)
+* **Автопоиск (По умолчанию)**: если поле оставлено пустым (`""`), плагин автоматически находит в каталоге первую модель с признаком `acceptsImages`.
+* **Явное переопределение**: укажите `visionProvider` и `visionModel` в **Настройки → Vision Bridge**. Все фоновые описания картинок и вызовы инструментов зрения будут направляться строго в эту специализированную модель, не затрагивая основную модель чата.
+
+### 2. Режимы работы моста (`mode`)
+* `hybrid` (По умолчанию): автоматическое фоновое добавление описаний для текстовых моделей **ПЛЮС** доступ ко всем 27 инструментам для агента.
+* `llm`: только автоматическое фоновое распознавание (без вызова инструментов агентом).
+* `tools`: без автоматической перезаписи промпта; агент получает ссылки и сам вызывает нужные инструменты (`describe_image`, `vision_ocr` и т.д.) по мере необходимости.
 
 ---
 
 ## 🌐 Архитектура динамических каналов зрения
 
-Вместо привязки к конкретным моделям, `dsh-vision-bridge` динамически обнаруживает любые модели с поддержкой зрения в каталоге (`acceptsImages(model)`) и поддерживает **5 универсальных типов каналов**:
+`dsh-vision-bridge` динамически обнаруживает любые модели с поддержкой зрения в каталоге (`acceptsImages(model)`) и поддерживает **5 универсальных типов каналов**:
 
 | Тип канала (`type`) | Назначение | Пример конфигурации |
 |---|---|---|
@@ -136,6 +150,10 @@ dsh plugin --profile web add @goodandready/dsh-vision-bridge
 ```yaml
 dsh-vision-bridge:
   enabled: true
+  visionProvider: my-provider
+  visionModel: my-vision-model
+  mode: hybrid
+  sanitizeImages: true
   autoLocalOllama: true
   channels:
     - type: dsh-catalog

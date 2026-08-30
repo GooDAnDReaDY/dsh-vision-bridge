@@ -27,44 +27,58 @@
 
 It solves two critical challenges:
 1. **Universal Multimodal Bridging**: When users send images, diagrams, or PDFs to **text-only LLMs**, the plugin automatically intercepts the attachments, extracts rich structured visual descriptions via configured vision channels, and injects the evidence seamlessly into the prompt — completely preventing `model does not support image input` crashes.
-2. **27 Agent Vision Tools**: Equips agents with a full suite of computer vision tools (OCR, VQA, spatial grounding, UI wireframe parsing, PDF page extraction, image diffing, and batch processing).
+2. **Dedicated Vision Model Separation**: Allows assigning a **dedicated, specialized Vision model** for all visual processing tasks, leaving the main chat model free to focus purely on fast reasoning and text generation.
+3. **27 Agent Vision Tools**: Equips agents with a full suite of computer vision tools (OCR, VQA, spatial grounding, UI wireframe parsing, PDF page extraction, image diffing, and batch processing).
 
 ```mermaid
 graph LR
-    subgraph Input [User Message Attachments]
-        Attach[🖼️ Images / Screenshots / PDFs] --> Check{Active Chat Model Has Native Vision?}
+    subgraph UserTurn [User Input]
+        Attach[🖼️ Image / Screenshot / PDF] --> Check{Active Chat Model Has Native Vision?}
     end
 
-    subgraph Transparent [Transparent Vision Bridge]
+    subgraph DedicatedVision [Dedicated Vision Processing Layer]
         Check -->|Yes: Native VLM| Pass[Direct Model Pass-Through]
         Check -->|No: Text-Only LLM| Interceptor[Vision Bridge Interceptor]
-        Interceptor --> VisionRouter{Multi-Channel Vision Router}
-        VisionRouter -->|Type 1: dsh-catalog| C1[DSH Catalog Vision Models]
-        VisionRouter -->|Type 2: openai-compatible| C2[OpenAI-Compatible Endpoints]
-        VisionRouter -->|Type 3: ollama| C3[Local Ollama / Auto-Probed]
-        VisionRouter -->|Type 4: custom / webhook| C4[Custom Gateway / Webhook]
-        C1 --> Structured[Structured Visual Evidence]
-        C2 --> Structured
-        C3 --> Structured
-        C4 --> Structured
+        Interceptor --> Pick{Dedicated Vision Model Selection}
+        Pick -->|Auto-Detect| AutoVLM[First Vision Model in Catalog]
+        Pick -->|Explicit Override| UserVLM[Configured Dedicated Vision Model]
+        Pick -->|Channel Fallback| Channels[Multi-Channel Router: Ollama / Webhook]
+        AutoVLM --> Structured[Structured Visual Evidence]
+        UserVLM --> Structured
+        Channels --> Structured
         Structured --> Fuse[Prompt Injection & Context Fusion]
     end
 
-    subgraph Execution [Chat Execution]
-        Pass --> LLM[Chat Model Inference]
+    subgraph ChatLLM [Main Chat Model]
+        Pass --> LLM[Fast Chat Model Reasoning]
         Fuse --> LLM
     end
 
-    style Input fill:#1e1e2e,stroke:#89b4fa,stroke-width:2px,color:#cdd6f4
-    style Transparent fill:#181825,stroke:#cba6f7,stroke-width:2px,color:#cdd6f4
-    style Execution fill:#11111b,stroke:#a6e3a1,stroke-width:2px,color:#cdd6f4
+    style UserTurn fill:#1e1e2e,stroke:#89b4fa,stroke-width:2px,color:#cdd6f4
+    style DedicatedVision fill:#181825,stroke:#cba6f7,stroke-width:2px,color:#cdd6f4
+    style ChatLLM fill:#11111b,stroke:#a6e3a1,stroke-width:2px,color:#cdd6f4
 ```
+
+---
+
+## 🎯 Dedicated Vision Model Selection & Bridge Operating Modes
+
+You can completely decouple your **chat reasoning model** from your **vision processing model**:
+
+### 1. Dedicated Vision Model Selection (`visionProvider` & `visionModel`)
+* **Auto-Discovery (Default)**: If left empty (`""`), the plugin automatically scans your active LLM catalog and picks the first model flagged with `acceptsImages`.
+* **Explicit Dedicated Override**: Specify a dedicated `visionProvider` and `visionModel` in **Settings → Vision Bridge**. All background image descriptions and tool invocations will route exclusively to this specialized model without altering your main conversation model.
+
+### 2. Bridge Operating Modes (`mode`)
+* `hybrid` (Default): Automatic background visual description injection for text-only models **PLUS** all 27 vision tools available to the agent.
+* `llm`: Background automatic description injection only (no manual agent tool exposure).
+* `tools`: No automatic background rewriting; the chat model receives image references and explicitly calls vision tools (`describe_image`, `vision_ocr`, etc.) when needed.
 
 ---
 
 ## 🌐 Dynamic Vision Channel Architecture
 
-Rather than requiring specific model configurations, `dsh-vision-bridge` dynamically discovers all vision-capable models from your active catalog (`acceptsImages(model)`) and routes image queries across **5 flexible channel types**:
+`dsh-vision-bridge` dynamically routes image queries across **5 flexible channel types**:
 
 | Channel Type (`type`) | Description | Example Configuration |
 |---|---|---|
@@ -139,6 +153,10 @@ dsh plugin --profile web add @goodandready/dsh-vision-bridge
 ```yaml
 dsh-vision-bridge:
   enabled: true
+  visionProvider: my-provider
+  visionModel: my-vision-model
+  mode: hybrid
+  sanitizeImages: true
   autoLocalOllama: true
   channels:
     - type: dsh-catalog

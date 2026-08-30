@@ -25,54 +25,54 @@
 
 **`dsh-vision-bridge`** 是为 **DeepSeek Harness** 量身定制的全能多模态视觉处理中枢。
 
-它彻底解决了两大核心场景痛点：
+它彻底解决了三大核心场景痛点：
 1. **通用多模态视觉桥接**：当用户向**纯文本大模型**发送图片、截图或 PDF 时，插件在请求发出前自动拦截附件，调度独立配置的多通道路由提取高保真结构化图文描述并无缝融合至 Prompt 中，彻底杜绝 `model does not support image input` 报错。
-2. **27 项专属视觉工具矩阵**：为智能体赋予全套视觉感知工具（OCR、VQA、空间坐标定位、UI 原型分析、PDF 多页解析、图片对比及批量处理）。
+2. **独立视觉大模型解耦指定**：支持为视觉任务指定**专属的独立 Vision 视觉大模型**，使主对话模型无需承担多模态解析开销，专注纯文本极速推理。
+3. **27 项专属视觉工具矩阵**：为智能体赋予全套视觉感知工具（OCR、VQA、空间坐标定位、UI 原型分析、PDF 多页解析、图片对比及批量处理）。
 
 ```mermaid
 graph LR
-    subgraph Input [用户会话附件]
+    subgraph UserTurn [用户会话输入]
         Attach[🖼️ 图像 / 屏幕截图 / PDF 文件] --> Check{当前对话模型是否原生支持视觉?}
     end
 
-    subgraph Transparent [透明视觉桥接中枢]
+    subgraph DedicatedVision [专属视觉模型处理层]
         Check -->|原生支持 VLM| Pass[直接穿透提交模型]
         Check -->|不支持: 纯文本模型| Interceptor[视觉桥接拦截器]
-        Interceptor --> VisionRouter{多通道视觉路由器}
-        VisionRouter -->|通道类型 1: dsh-catalog| C1[DSH 目录视觉模型]
-        VisionRouter -->|通道类型 2: openai-compatible| C2[OpenAI 规范视觉接口]
-        VisionRouter -->|通道类型 3: ollama| C3[本地 Ollama / 自动探测]
-        VisionRouter -->|通道类型 4: custom / webhook| C4[自定义网关 / Webhook 接口]
-        C1 --> Structured[结构化视觉特征]
-        C2 --> Structured
-        C3 --> Structured
-        C4 --> Structured
+        Interceptor --> Pick{独立 Vision 模型调度}
+        Pick -->|自动探测| AutoVLM[目录中首个视觉大模型]
+        Pick -->|显式指定| UserVLM[配置的专属视觉大模型]
+        Pick -->|通道路由| Channels[多通道分发: Ollama / Webhook]
+        AutoVLM --> Structured[结构化视觉特征]
+        UserVLM --> Structured
+        Channels --> Structured
         Structured --> Fuse[Prompt 上下文智能融合]
     end
 
-    subgraph Execution [最终生成响应]
-        Pass --> LLM[对话模型正常推理输出]
+    subgraph ChatLLM [主对话大模型]
+        Pass --> LLM[纯文本极速推理输出]
         Fuse --> LLM
     end
 
-    style Input fill:#1e1e2e,stroke:#89b4fa,stroke-width:2px,color:#cdd6f4
-    style Transparent fill:#181825,stroke:#cba6f7,stroke-width:2px,color:#cdd6f4
-    style Execution fill:#11111b,stroke:#a6e3a1,stroke-width:2px,color:#cdd6f4
+    style UserTurn fill:#1e1e2e,stroke:#89b4fa,stroke-width:2px,color:#cdd6f4
+    style DedicatedVision fill:#181825,stroke:#cba6f7,stroke-width:2px,color:#cdd6f4
+    style ChatLLM fill:#11111b,stroke:#a6e3a1,stroke-width:2px,color:#cdd6f4
 ```
 
 ---
 
-## 🌐 动态视觉通道架构 (5 大通道类型)
+## 🎯 独立 Vision 模型指定与网桥运行模式
 
-`dsh-vision-bridge` 不强制绑定任何静态模型名称，而是从 DSH 模型目录中动态发现所有视觉模型 (`acceptsImages(model)`)，并支持 5 种通道类型：
+您可以将**对话推理模型**与**视觉理解模型**完全解耦：
 
-| 通道类型 (`type`) | 功能说明 | 配置示例 |
-|---|---|---|
-| `dsh-catalog` | DSH 已配置的任意上游视觉模型 | `{ type: 'dsh-catalog', provider: 'provider-id', model: 'model-id' }` |
-| `openai-compatible` | 标准 OpenAI 格式视觉接口 (如本地推理引擎或网关) | `{ type: 'openai-compatible', baseURL: 'http://localhost:8000/v1', model: '...' }` |
-| `ollama` | 本地 Ollama 实例并支持自动探针 (`autoLocalOllama`) | `{ type: 'ollama', baseURL: 'http://localhost:11434/v1', model: '...' }` |
-| `custom` | 基于 `requestTemplate` 与 `responsePath` 的自定义 HTTP 协议 | `{ type: 'custom', baseURL: '...', requestTemplate: {...} }` |
-| `webhook` | 专用 HTTP POST Webhook | `{ type: 'webhook', baseURL: 'https://...' }` |
+### 1. 专属视觉模型指定 (`visionProvider` 与 `visionModel`)
+* **自动探测 (默认)**：留空 (`""`) 时，系统自动在已加载的服务商目录中选用首个 `acceptsImages` 为 true 的模型。
+* **显式指定专属模型**：在 **设置 → Vision Bridge** 中明确指定 `visionProvider` 与 `visionModel`。所有后台图像描述及视觉工具调用将统一路由至此模型，完全不改变聊天主模型的配置。
+
+### 2. 网桥工作模式 (`mode`)
+* `hybrid` (默认)：自动为纯文本模型补齐图片描述 **且** 同时向智能体开放全部 27 项视觉工具。
+* `llm`：仅开启后台自动图片转文本注入（不向智能体暴露工具）。
+* `tools`：不执行后台自动转写；智能体在感知到图片引用后，根据需要显式调用视觉工具 (`describe_image`, `vision_ocr` 等)。
 
 ---
 
