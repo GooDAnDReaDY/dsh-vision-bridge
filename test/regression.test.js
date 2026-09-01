@@ -437,3 +437,36 @@ describe('ocr enhancements', () => {
     assert.ok(mod.name === 'dsh-vision-bridge');
   });
 });
+
+// ── Group 5: Image preprocessing (#145 #146 #147 #149) ──────────────────
+describe('group 5 preprocessing', async () => {
+  const { tileImage, deskewImage, enhanceImage, autoSelectFormat } = await import(path.join(repoRoot, 'lib/index.js'));
+
+  it('tileImage returns single tile for small image', async () => {
+    const bytes = Buffer.from([0x89, 0x50, 0x4e, 0x47]); // PNG header
+    const tiles = await tileImage(bytes, 'image/png', { maxPixels: 4000000 });
+    assert.equal(tiles.length, 1);
+  });
+
+  it('deskewImage returns original if sharp unavailable', async () => {
+    const bytes = Buffer.from([0xff, 0xd8, 0xff, 0xe0]); // JPEG header
+    const result = await deskewImage(bytes, 'image/jpeg');
+    assert.ok(result.length > 0);
+  });
+
+  it('enhanceImage returns original if sharp unavailable', async () => {
+    const bytes = Buffer.from([0x89, 0x50, 0x4e, 0x47]); // PNG header
+    const result = await enhanceImage(bytes, 'image/png');
+    assert.ok(result.length > 0);
+  });
+
+  it('autoSelectFormat returns png for small files', async () => {
+    const smallBytes = Buffer.from(new Array(1000).fill(0));
+    assert.equal(await autoSelectFormat(smallBytes), 'png');
+  });
+
+  it('autoSelectFormat returns webp for large files', async () => {
+    const largeBytes = Buffer.from(new Array(200000).fill(0));
+    assert.equal(await autoSelectFormat(largeBytes), 'webp');
+  });
+});
