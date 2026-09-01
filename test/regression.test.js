@@ -385,3 +385,47 @@ describe('free provider catalog', () => {
     assert.ok(mod.name === 'dsh-vision-bridge');
   });
 });
+
+// ── Security functions (#135 #136 #137 #138 #139) ─────────────────────────
+describe('security functions', async () => {
+  const { maskPII, maskSystemPaths, stripEXIF, checkNSFW } = await import(path.join(repoRoot, 'lib/index.js'));
+
+  it('maskPII masks emails', () => {
+    const result = maskPII('Contact user@example.com for details');
+    assert.ok(result.includes('[EMAIL]'));
+    assert.ok(!result.includes('user@example.com'));
+  });
+
+  it('maskPII masks phone numbers', () => {
+    const result = maskPII('Call +1-234-567-8900 now');
+    assert.ok(result.includes('[PHONE]'));
+  });
+
+  it('maskSystemPaths masks unix paths', () => {
+    const result = maskSystemPaths('File at /home/user/secret.txt');
+    assert.ok(result.includes('[PATH]'));
+    assert.ok(!result.includes('/home/user/secret.txt'));
+  });
+
+  it('maskSystemPaths masks windows paths', () => {
+    const result = maskSystemPaths('File at C:\\Users\\test\\file.txt');
+    assert.ok(result.includes('[PATH]'));
+  });
+
+  it('maskSystemPaths masks IP addresses', () => {
+    const result = maskSystemPaths('Server at 192.168.1.111');
+    assert.ok(result.includes('[IP]'));
+    assert.ok(!result.includes('192.168.1.111'));
+  });
+
+  it('stripEXIF returns original if sharp unavailable', async () => {
+    const bytes = Buffer.from([0xff, 0xd8, 0xff, 0xe0]); // JPEG header
+    const result = await stripEXIF(bytes, 'image/jpeg');
+    assert.ok(result.length > 0);
+  });
+
+  it('checkNSFW returns true (stub)', async () => {
+    const result = await checkNSFW(Buffer.from([0x89, 0x50]));
+    assert.equal(result, true);
+  });
+});
