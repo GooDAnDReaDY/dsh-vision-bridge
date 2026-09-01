@@ -491,3 +491,20 @@ describe('group 6 visual analysis', async () => {
     assert.equal(check3, false);
   });
 });
+
+// ── Group 9: UI & Tools (#157 #159 #170 #172) ───────────────────────────
+describe('group 9 ui and tools', async () => {
+  const { pHash, checkImageQuality } = await import(path.join(repoRoot, 'lib/index.js'));
+
+  it('pHash returns fallback hash for empty input', async () => {
+    const hash = await pHash(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+    assert.ok(typeof hash === 'string');
+    assert.ok(hash.length > 0);
+  });
+
+  it('checkImageQuality returns score object', async () => {
+    const result = await checkImageQuality(Buffer.from([0x89, 0x50, 0x4e, 0x47]));
+    assert.ok(typeof result.score === 'number');
+    assert.ok(typeof result.note === 'string');
+  });
+});
