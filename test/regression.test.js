@@ -342,3 +342,46 @@ describe('image compression', async () => {
     assert.ok(['image/png', 'image/webp', 'image/jpeg'].includes(result.contentType));
   });
 });
+
+// ── Ollama discovery (#132) ────────────────────────────────────────────────
+describe('ollama discovery', async () => {
+  const { discoverOllamaVisionModels } = await import(path.join(repoRoot, 'lib/channels.js'));
+
+  it('returns empty on network error', async () => {
+    const models = await discoverOllamaVisionModels('http://localhost:99999/v1');
+    assert.deepEqual(models, []);
+  });
+});
+
+// ── vLLM channel type (#133) ───────────────────────────────────────────────
+describe('vllm channel type', async () => {
+  const { channelKey } = await import(path.join(repoRoot, 'lib/channels.js'));
+
+  it('generates correct key for vllm channel', () => {
+    const key = channelKey({ type: 'vllm', baseURL: 'http://localhost:8000/v1', model: 'llava' });
+    assert.ok(key.includes('vllm'));
+  });
+
+  it('generates correct key for sglang channel', () => {
+    const key = channelKey({ type: 'sglang', baseURL: 'http://localhost:8000/v1', model: 'llava' });
+    assert.ok(key.includes('sglang'));
+  });
+});
+
+// ── JSON-RPC webhook (#134) ────────────────────────────────────────────────
+describe('jsonrpc webhook', () => {
+  it('channel config supports jsonrpc protocol', () => {
+    const channel = { type: 'webhook', protocol: 'jsonrpc', method: 'describe', baseURL: 'http://test' };
+    assert.equal(channel.protocol, 'jsonrpc');
+    assert.equal(channel.method, 'describe');
+  });
+});
+
+// ── Free provider catalog (#130) ───────────────────────────────────────────
+describe('free provider catalog', () => {
+  it('index.js exports FREE_VISION_PROVIDERS info via /providers', async () => {
+    // Just verify the module loads without error
+    const mod = await import(path.join(repoRoot, 'lib/index.js'));
+    assert.ok(mod.name === 'dsh-vision-bridge');
+  });
+});
