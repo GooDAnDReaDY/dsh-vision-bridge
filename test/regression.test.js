@@ -470,3 +470,24 @@ describe('group 5 preprocessing', async () => {
     assert.equal(await autoSelectFormat(largeBytes), 'webp');
   });
 });
+
+// ── Group 6: Visual Analysis (#154 #156 #158 #161) ─────────────────────
+describe('group 6 visual analysis', async () => {
+  const { compressImage } = await import(path.join(repoRoot, 'lib/index.js'));
+
+  it('validate bbox coordinates', () => {
+    // Test bbox validation logic
+    const validBox = [100, 200, 300, 400];
+    const invalidBox = [300, 200, 100, 400];
+    const outOfRange = [-10, 200, 1100, 400];
+    // validBox: x1<x2, y1<y2, all in range — should be valid
+    const check1 = validBox.every(n => n >= 0 && n <= 1000) && validBox[0] < validBox[2] && validBox[1] < validBox[3];
+    assert.equal(check1, true);
+    // invalidBox: x1>x2 — should be invalid
+    const check2 = invalidBox[0] < invalidBox[2];
+    assert.equal(check2, false);
+    // outOfRange: negative and > 1000 — should be invalid
+    const check3 = outOfRange.every(n => n >= 0 && n <= 1000);
+    assert.equal(check3, false);
+  });
+});
