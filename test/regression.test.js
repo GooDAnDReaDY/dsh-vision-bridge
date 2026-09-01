@@ -245,3 +245,100 @@ describe('skill provider registration (#119)', () => {
     assert.equal(exists, true);
   });
 });
+
+// ── Circuit breaker (#129) ─────────────────────────────────────────────────
+describe('circuit breaker', async () => {
+  const { getCircuitState, circuitSuccess, circuitFailure, isCircuitOpen } = await import(path.join(repoRoot, 'lib/channels.js'));
+
+  it('closed → open after 3 failures', () => {
+    const states = new Map();
+    const key = 'test-channel';
+    circuitFailure(states, key);
+    assert.equal(isCircuitOpen(states, key), false);
+    circuitFailure(states, key);
+    assert.equal(isCircuitOpen(states, key), false);
+    circuitFailure(states, key);
+    assert.equal(isCircuitOpen(states, key), true);
+    const s = getCircuitState(states, key);
+    assert.equal(s.state, 'open');
+    assert.equal(s.failures, 3);
+  });
+
+  it('open → half-open after timeout', () => {
+    const states = new Map();
+    const key = 'test-channel';
+    states.set(key, { failures: 3, state: 'open', openUntil: Date.now() - 1000 });
+    assert.equal(isCircuitOpen(states, key), false);
+    const s = getCircuitState(states, key);
+    assert.equal(s.state, 'half-open');
+  });
+
+  it('half-open → closed on success', () => {
+    const states = new Map();
+    const key = 'test-channel';
+    states.set(key, { failures: 3, state: 'half-open', openUntil: 0 });
+    circuitSuccess(states, key);
+    const s = getCircuitState(states, key);
+    assert.equal(s.state, 'closed');
+    assert.equal(s.failures, 0);
+  });
+
+  it('half-open → open on failure', () => {
+    const states = new Map();
+    const key = 'test-channel';
+    states.set(key, { failures: 3, state: 'half-open', openUntil: 0 });
+    circuitFailure(states, key);
+    const s = getCircuitState(states, key);
+    assert.equal(s.state, 'open');
+    assert.equal(s.failures, 4);
+  });
+});
+
+// ── Latency tracking (#127) ────────────────────────────────────────────────
+describe('latency tracking', async () => {
+  const { recordLatency, getAvgLatency, getSortedChannels, channelKey } = await import(path.join(repoRoot, 'lib/channels.js'));
+
+  it('rolling average', () => {
+    const latencies = new Map();
+    const key = 'test-channel';
+    recordLatency(latencies, key, 100);
+    recordLatency(latencies, key, 200);
+    recordLatency(latencies, key, 300);
+    assert.equal(getAvgLatency(latencies, key), 200);
+  });
+
+  it('window limit', () => {
+    const latencies = new Map();
+    const key = 'test-channel';
+    for (let i = 0; i < 15; i++) recordLatency(latencies, key, i * 100);
+    assert.equal(latencies.get(key).length, 10);
+  });
+
+  it('sort channels by avg latency', () => {
+    const latencies = new Map();
+    const circuitStates = new Map();
+    const cooldowns = new Map();
+    latencies.set('openai-compatible:http://fast/m', [100, 100, 100]);
+    latencies.set('openai-compatible:http://slow/m', [500, 500, 500]);
+    latencies.set('openai-compatible:http://medium/m', [300, 300, 300]);
+    const channels = [
+      { type: 'openai-compatible', baseURL: 'http://slow', model: 'm' },
+      { type: 'openai-compatible', baseURL: 'http://fast', model: 'm' },
+      { type: 'openai-compatible', baseURL: 'http://medium', model: 'm' },
+    ];
+    const sorted = getSortedChannels(channels, { latencies, circuitStates, cooldowns, cooldownMs: 0 });
+    assert.ok(sorted[0].baseURL.includes('fast'));
+  });
+});
+
+// ── Image compression (#128) ───────────────────────────────────────────────
+describe('image compression', async () => {
+  const { compressImage } = await import(path.join(repoRoot, 'lib/index.js'));
+
+  it('returns original if sharp unavailable', async () => {
+    const bytes = Buffer.from([0x89, 0x50, 0x4e, 0x47]); // PNG header
+    const result = await compressImage(bytes, 'image/png', { maxWidth: 100, maxHeight: 100, quality: 80, format: 'webp' });
+    assert.ok(result.bytes.length > 0);
+    assert.ok(['image/png', 'image/webp', 'image/jpeg'].includes(result.contentType));
+  });
+});
