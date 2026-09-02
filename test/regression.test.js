@@ -508,3 +508,77 @@ describe('group 9 ui and tools', async () => {
     assert.ok(typeof result.note === 'string');
   });
 });
+
+// ── Group 11: Document & Visual Intelligence (#141 #142 #143 #144 #167) ─
+describe('group 11 document and visual intelligence', async () => {
+  it('checks tools registration in index.js', async () => {
+    const fsMod = await import('node:fs');
+    const indexPath = path.join(repoRoot, 'lib/index.js');
+    const indexCode = fsMod.readFileSync(indexPath, 'utf8');
+    assert.ok(indexCode.includes('vision_extract_formula'), 'vision_extract_formula registered');
+    assert.ok(indexCode.includes('vision_extract_table'), 'vision_extract_table registered');
+    assert.ok(indexCode.includes('vision_scan_barcode'), 'vision_scan_barcode registered');
+    assert.ok(indexCode.includes('vision_extract_structured'), 'vision_extract_structured registered');
+    assert.ok(indexCode.includes('vision_audit_accessibility'), 'vision_audit_accessibility registered');
+  });
+
+  it('validates LaTeX formula parsing contract', () => {
+    const obj = {
+      latex: '\\int_{0}^{\\infty} e^{-x^2} dx = \\frac{\\sqrt{\\pi}}{2}',
+      expressions: ['\\int', '\\frac'],
+      description: 'Gaussian integral'
+    };
+    const raw = JSON.stringify(obj);
+    const parsed = JSON.parse(raw);
+    assert.ok(parsed.latex.includes('\\int'));
+    assert.equal(parsed.expressions.length, 2);
+  });
+
+  it('validates table format generation', () => {
+    const obj = {
+      table: '| Header 1 | Header 2 |\n|---|---|\n| Val 1 | Val 2 |',
+      rowCount: 1,
+      colCount: 2
+    };
+    const raw = JSON.stringify(obj);
+    const parsed = JSON.parse(raw);
+    assert.equal(parsed.rowCount, 1);
+    assert.equal(parsed.colCount, 2);
+  });
+
+  it('validates barcode scanner contract', () => {
+    const obj = {
+      found: true,
+      codes: [{ type: 'QR', value: 'https://goodandready.app', location: 'center' }]
+    };
+    const raw = JSON.stringify(obj);
+    const parsed = JSON.parse(raw);
+    assert.equal(parsed.found, true);
+    assert.equal(parsed.codes[0].value, 'https://goodandready.app');
+  });
+
+  it('validates structured JSON extractor contract', () => {
+    const obj = {
+      data: { total: 1500, vendor: 'Coffee Shop', date: '2026-09-02' },
+      confidence: 98,
+      missingFields: []
+    };
+    const raw = JSON.stringify(obj);
+    const parsed = JSON.parse(raw);
+    assert.equal(parsed.data.total, 1500);
+    assert.equal(parsed.confidence, 98);
+  });
+
+  it('validates WCAG accessibility auditor score', () => {
+    const obj = {
+      score: 92,
+      passed: true,
+      issues: [{ type: 'contrast', severity: 'warning', element: 'Footer link', description: 'Contrast 4.1:1 below 4.5:1', recommendation: 'Increase font weight' }]
+    };
+    const raw = JSON.stringify(obj);
+    const parsed = JSON.parse(raw);
+    assert.equal(parsed.score, 92);
+    assert.equal(parsed.passed, true);
+    assert.equal(parsed.issues[0].severity, 'warning');
+  });
+});

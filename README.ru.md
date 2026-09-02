@@ -91,6 +91,7 @@ graph LR
 | **OCR и текст** | `vision_ocr`, `vision_ocr_local`, `vision_long_ocr`, `vision_trace`, `vision_colors`, `vision_extract_foreground` | Распознавание текста, локальный оффлайн Tesseract OCR, склейка длинных скриншотов, векторизация SVG. |
 | **Структурированный анализ** | `vision_describe_structured`, `vision_vqa`, `vision_ui_layout`, `vision_translate_image` | Выдача JSON (`{summary, ocr, layout, entities}`), ответы на короткие вопросы, разбор верстки UI. |
 | **Пиксельные операции** | `vision_pixel_diff`, `vision_tile`, `vision_deskew`, `vision_enhance` | Попиксельное сравнение, нарезка тайлов, выравнивание и улучшение четкости. |
+| **Документы и Intelligence** | `vision_extract_formula`, `vision_extract_table`, `vision_scan_barcode`, `vision_extract_structured`, `vision_audit_accessibility` | Извлечение формул в LaTeX, таблиц в Markdown/HTML, сканирование QR/штрихкодов, JSON Schema экстрактор, аудит доступности WCAG. |
 
 ---
 
