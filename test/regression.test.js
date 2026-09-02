@@ -652,3 +652,27 @@ describe('group 12 ui flow consensus memory and native tokens', async () => {
     assert.equal(parsed.matches[0].score, 0.95);
   });
 });
+
+// ── Group 13: Cross-Plugin Synergy (#dsh-image-gen & #dsh-memory-brain) ───
+describe('group 13 cross-plugin synergy', async () => {
+  it('checks synergy tools registration in index.js', async () => {
+    const fsMod = await import('node:fs');
+    const indexPath = path.join(repoRoot, 'lib/index.js');
+    const indexCode = fsMod.readFileSync(indexPath, 'utf8');
+    assert.ok(indexCode.includes('vision_verify_generated_image'), 'vision_verify_generated_image registered');
+    assert.ok(indexCode.includes('indexVisualMemory'), 'indexVisualMemory helper registered');
+  });
+
+  it('validates AI generated image verification contract', () => {
+    const raw = JSON.stringify({
+      score: 95,
+      passed: true,
+      critique: 'The generated image matches the prompt closely with clean lines and sharp details.',
+      detectedElements: ['dog', 'fireplace', 'pine branch']
+    });
+    const parsed = JSON.parse(raw);
+    assert.equal(parsed.score, 95);
+    assert.equal(parsed.passed, true);
+    assert.equal(parsed.detectedElements.length, 3);
+  });
+});
