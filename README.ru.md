@@ -92,6 +92,7 @@ graph LR
 | **Структурированный анализ** | `vision_describe_structured`, `vision_vqa`, `vision_ui_layout`, `vision_translate_image` | Выдача JSON (`{summary, ocr, layout, entities}`), ответы на короткие вопросы, разбор верстки UI. |
 | **Пиксельные операции** | `vision_pixel_diff`, `vision_tile`, `vision_deskew`, `vision_enhance` | Попиксельное сравнение, нарезка тайлов, выравнивание и улучшение четкости. |
 | **Документы и Intelligence** | `vision_extract_formula`, `vision_extract_table`, `vision_scan_barcode`, `vision_extract_structured`, `vision_audit_accessibility` | Извлечение формул в LaTeX, таблиц в Markdown/HTML, сканирование QR/штрихкодов, JSON Schema экстрактор, аудит доступности WCAG. |
+| **Сценарии, Консенсус и Память** | `vision_ui_flow`, `vision_consensus`, `vision_memory_search` | Реконструкция графа пользовательских сценариев (User Journey / Mermaid), мультимодельный консенсус (устранение галлюцинаций), семантический поиск по памяти изображений. |
 
 ---
 

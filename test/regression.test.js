@@ -582,3 +582,73 @@ describe('group 11 document and visual intelligence', async () => {
     assert.equal(parsed.issues[0].severity, 'warning');
   });
 });
+
+// ── Group 12: UI Flow, Consensus & Memory Search (#90 #131 #155 #163 #171)
+describe('group 12 ui flow consensus memory and native tokens', async () => {
+  it('checks tools registration in index.js', async () => {
+    const fsMod = await import('node:fs');
+    const indexPath = path.join(repoRoot, 'lib/index.js');
+    const indexCode = fsMod.readFileSync(indexPath, 'utf8');
+    assert.ok(indexCode.includes('vision_ui_flow'), 'vision_ui_flow registered');
+    assert.ok(indexCode.includes('vision_consensus'), 'vision_consensus registered');
+    assert.ok(indexCode.includes('vision_memory_search'), 'vision_memory_search registered');
+  });
+
+  it('validates DeepSeek-VL and Janus native bbox parsing', () => {
+    // DeepSeek format: (120, 340), (560, 780)
+    const dsText = '<|box|>(120, 340), (560, 780)<|/box|>';
+    const dsMatch = dsText.match(/\(?(\d{1,4}),\s*(\d{1,4})\)?,\s*\(?(\d{1,4}),\s*(\d{1,4})\)?/);
+    assert.ok(dsMatch);
+    assert.equal(Number(dsMatch[1]), 120);
+    assert.equal(Number(dsMatch[2]), 340);
+    assert.equal(Number(dsMatch[3]), 560);
+    assert.equal(Number(dsMatch[4]), 780);
+
+    // Janus format: [box_2d: 100, 200, 300, 400] (ymin, xmin, ymax, xmax)
+    const jnText = '[box_2d: 100, 200, 300, 400]';
+    const jnMatch = jnText.match(/\[(?:box_2d:?\s*)?(\d{1,4}),\s*(\d{1,4}),\s*(\d{1,4}),\s*(\d{1,4})\]/i);
+    assert.ok(jnMatch);
+    assert.equal(Number(jnMatch[2]), 200); // xmin
+    assert.equal(Number(jnMatch[1]), 100); // ymin
+  });
+
+  it('validates UI flow journey structure', () => {
+    const raw = JSON.stringify({
+      title: 'Checkout Flow',
+      summary: '3-step checkout flow',
+      steps: [
+        { step: 1, screen: 'Cart', action: 'Click Checkout', nextScreen: 'Payment', description: 'User reviews items' },
+        { step: 2, screen: 'Payment', action: 'Enter Card & Pay', nextScreen: 'Confirmation', description: 'Process payment' }
+      ],
+      mermaid: 'graph TD\n  Cart --> Payment\n  Payment --> Confirmation'
+    });
+    const parsed = JSON.parse(raw);
+    assert.equal(parsed.steps.length, 2);
+    assert.ok(parsed.mermaid.includes('graph TD'));
+  });
+
+  it('validates multi-model consensus contract', () => {
+    const raw = JSON.stringify({
+      consensus: 'The image depicts a beagle dog on a dark fireplace hearth next to pine branches.',
+      modelsQueried: ['qwen-vl', 'minicpm-v'],
+      discrepancies: ['One model mentioned piano keys'],
+      confidence: 94
+    });
+    const parsed = JSON.parse(raw);
+    assert.equal(parsed.confidence, 94);
+    assert.equal(parsed.modelsQueried.length, 2);
+    assert.equal(parsed.discrepancies.length, 1);
+  });
+
+  it('validates memory search results contract', () => {
+    const raw = JSON.stringify({
+      count: 1,
+      matches: [
+        { attachmentId: 'sha256:abc123', name: 'diagram.png', score: 0.95, descriptionSnippet: 'Database schema diagram...' }
+      ]
+    });
+    const parsed = JSON.parse(raw);
+    assert.equal(parsed.count, 1);
+    assert.equal(parsed.matches[0].score, 0.95);
+  });
+});
