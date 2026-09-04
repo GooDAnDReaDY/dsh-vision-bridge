@@ -676,3 +676,16 @@ describe('group 13 cross-plugin synergy', async () => {
     assert.equal(parsed.detectedElements.length, 3);
   });
 });
+
+// ── Group 14: Client Slots & Composer UI Controls ────────────────────────
+describe('group 14 client slots and composer controls', async () => {
+  it('checks conversation.input.right and composer bar slots in client.js', async () => {
+    const fsMod = await import('node:fs');
+    const clientPath = path.join(repoRoot, 'lib/client.js');
+    const clientCode = fsMod.readFileSync(clientPath, 'utf8');
+    assert.ok(clientCode.includes('conversation.input.right'), 'conversation.input.right slot registered');
+    assert.ok(clientCode.includes('conversation.composer.bar'), 'conversation.composer.bar slot registered');
+    assert.ok(clientCode.includes('VisionInputControls'), 'VisionInputControls component defined');
+    assert.ok(clientCode.includes('vbr-input-btn'), 'vbr-input-btn CSS class present');
+  });
+});
