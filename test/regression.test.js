@@ -684,7 +684,7 @@ describe('group 14 client slots and composer controls', async () => {
     const clientPath = path.join(repoRoot, 'lib/client.js');
     const clientCode = fsMod.readFileSync(clientPath, 'utf8');
     assert.ok(clientCode.includes('conversation.input.right'), 'conversation.input.right slot registered');
-    assert.ok(clientCode.includes('conversation.composer.bar'), 'conversation.composer.bar slot registered');
+    assert.ok(!clientCode.includes('conversation.composer.bar'), 'conversation.composer.bar must NOT be registered (avoids priority collision with core dsh-client-ui-conversation)');
     assert.ok(clientCode.includes('VisionInputControls'), 'VisionInputControls component defined');
     assert.ok(clientCode.includes('vbr-input-btn'), 'vbr-input-btn CSS class present');
   });
