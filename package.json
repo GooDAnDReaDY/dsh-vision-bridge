@@ -1,6 +1,6 @@
 {
   "name": "@goodandready/dsh-vision-bridge",
-  "version": "0.5.24",
+  "version": "0.5.25",
   "description": "Flagship multimodal vision hub for DeepSeek Harness: 30+ tools, PDF drag-and-drop, LaTeX formulas, complex tables, QR codes, UI flow diagrams, and multi-model consensus.",
   "repository": {
     "type": "git",
