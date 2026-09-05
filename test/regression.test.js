@@ -689,3 +689,45 @@ describe('group 14 client slots and composer controls', async () => {
     assert.ok(clientCode.includes('vbr-input-btn'), 'vbr-input-btn CSS class present');
   });
 });
+
+// ── Group 15: Security & Settings Audit Verification (#190, #191, #192) ──
+describe('group 15 security and settings audit (#190, #191, #192)', async () => {
+  it('checks isTrustedSettingsRequest helper (#192)', async () => {
+    const { isTrustedSettingsRequest } = await import('../lib/index.js');
+    assert.strictEqual(typeof isTrustedSettingsRequest, 'function');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: { 'sec-fetch-site': 'cross-site' } }), false, 'rejects cross-site');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: { 'sec-fetch-site': 'same-origin' } }), true, 'accepts same-origin');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: { 'sec-fetch-site': 'same-site' } }), true, 'accepts same-site');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: { 'sec-fetch-site': 'none' } }), true, 'accepts none');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: {} }), true, 'accepts missing header for same-host curls');
+    assert.strictEqual(isTrustedSettingsRequest(null), false, 'rejects null request');
+  });
+
+  it('checks apiKey masking and preservation (#190)', async () => {
+    const { maskApiKey, isMaskedKey } = await import('../lib/index.js');
+    assert.strictEqual(typeof maskApiKey, 'function');
+    assert.strictEqual(typeof isMaskedKey, 'function');
+
+    const longKey = 'sk-proj-1234567890abcdef1234567890';
+    const masked = maskApiKey(longKey);
+    assert.ok(masked.startsWith('sk-p...'), 'masks prefix');
+    assert.ok(masked.endsWith('7890'), 'masks suffix');
+    assert.ok(!masked.includes('abcdef'), 'does not reveal middle characters');
+    assert.strictEqual(isMaskedKey(masked), true);
+
+    const shortKey = 'secret';
+    assert.strictEqual(maskApiKey(shortKey), '********');
+    assert.strictEqual(isMaskedKey('********'), true);
+    assert.strictEqual(isMaskedKey('plain-secret-key'), false);
+  });
+
+  it('checks settingsScope binding in client.js (#191)', async () => {
+    const fsMod = await import('node:fs');
+    const clientPath = path.join(repoRoot, 'lib/client.js');
+    const clientCode = fsMod.readFileSync(clientPath, 'utf8');
+
+    assert.ok(clientCode.includes("'settingsScope'"), 'settingsScope included in exports.inject');
+    assert.ok(clientCode.includes('ctx.settingsScope.bind'), 'settingsScope.bind called in client');
+    assert.ok(clientCode.includes('scope.subscribe'), 'scope.subscribe reactive listener present');
+  });
+});
