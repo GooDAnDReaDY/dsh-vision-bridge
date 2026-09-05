@@ -137,3 +137,8 @@ dsh-vision-bridge:
 ## 📄 Лицензия
 
 MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)
+
+### 15. 🛡️ Безопасность и интеграция с ядром (`v0.5.27`)
+* **Маскирование секретов**: Эндпоинт `GET /channels` маскирует API-ключи провайдеров (`sk-p...7890` или `********`) и отдаёт флаг `hasApiKey: true`. При отправке маски обратно через `POST /channels` оригинальный ключ сохраняется без перезаписи.
+* **Гард от CSRF и межсайтовых атак**: Все мутирующие маршруты (`/config`, `/channels`, `/upload-pdf`, `/test`) проверяют заголовок `sec-fetch-site` через `isTrustedSettingsRequest` и блокируют cross-site вызовы ответом `403 Forbidden: same-origin only`.
+* **Реактивная привязка к settingsScope**: Карточка настроек в браузере связывается со стандартным сервисом ядра `ctx.settingsScope.bind({ namespace: 'dsh-vision-bridge' })` со слушателями снапшотов.

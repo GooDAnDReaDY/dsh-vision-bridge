@@ -148,3 +148,8 @@ dsh-vision-bridge:
 ## 📄 License
 
 MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)
+
+### 15. 🛡️ Enterprise Security & Settings Governance (`v0.5.27`)
+* **Masked Secrets**: `GET /channels` automatically masks sensitive provider API keys (`sk-p...7890` or `********`) and reports `hasApiKey: true` to prevent secret leakage in browser DevTools/XHR. `POST /channels` preserves existing keys when a mask is submitted.
+* **CSRF & Origin Guard**: All mutating endpoints (`/config`, `/channels`, `/upload-pdf`, `/test`) validate `sec-fetch-site !== 'cross-site'` via `isTrustedSettingsRequest`, rejecting cross-origin attacks with `403 Forbidden`.
+* **Native settingsScope Integration**: Settings UI binds directly to `ctx.settingsScope` (`namespace: 'dsh-vision-bridge'`), supporting reactive snapshot listeners and kernel state synchronization.
