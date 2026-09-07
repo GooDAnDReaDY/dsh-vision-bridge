@@ -1,10 +1,12 @@
-# Findings: Audit 2026-09-05 (#190, #191, #192)
+# Findings: Stability & Architecture Review
 
-1. **#190 (apiKey exposure)**:
-   `GET /channels` directly returned channel JSON which included `channel.apiKey`. In web apps this exposes stored provider keys in DevTools/XHR. Fix: return masked string (e.g. `sk-...****`) or `hasApiKey: true`. When receiving POST with mask string, keep the previously configured key.
+1. **Synchronous Process Spawning**:
+   Calls to `spawnSync` for `pdftoppm`, `tesseract`, `ffmpeg`, and `chrome` ran synchronously on the main Node.js thread, freezing the event loop during large file processing.
+   Solution: A dedicated `runProcess` async helper wrapped in Promise with `AbortSignal` and configurable `timeoutMs`.
 
-2. **#191 (settingsScope)**:
-   In modern DSH, `ctx.settingsScope` manages settings snapshots and persistence. The client was doing standalone `fetch('/dsh-vision-bridge/config')` without notifying the kernel scope. Adding `settingsScope` to `exports.inject` and binding the namespace integrates cleanly.
+2. **Tool Catalog Optimization**:
+   46 tools in the catalog caused ~4k tokens overhead per turn.
+   Deduplicating identical/overlapping tools and eliminating empty stubs streamlines the system prompt while maintaining 100% of capabilities.
 
-3. **#192 (isTrustedSettingsRequest)**:
-   DSH standards require mutating HTTP endpoints to verify `request.headers['sec-fetch-site'] !== 'cross-site'` to block cross-origin CSRF invocations.
+3. **Backwards Compatibility**:
+   Retaining tool aliases where necessary ensures existing scripts and workflows remain fully functional.

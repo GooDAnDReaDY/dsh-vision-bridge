@@ -1,20 +1,25 @@
-# Task Plan: Fix Audit Security & Settings Issues (#190, #191, #192)
+# Task Plan: Refactor Stability & Async (#195)
 
-## Phase 1: Security & Route Guards (#192)
-- [ ] Add `isTrustedSettingsRequest(req)` helper to `lib/index.js`.
-- [ ] Guard `POST /config`, `POST /channels`, `POST /channels/test`, `POST /upload-pdf`.
+## Phase 1: Async Non-blocking Execution
+- [ ] Create async runner utility `runProcess(bin, args, options)` using non-blocking `execFile`/`spawn` with promise, timeout, and signal.
+- [ ] Replace `spawnSync('pdftoppm', ...)` in `/upload-pdf` and `vision_pdf_pages` with async runner.
+- [ ] Replace `spawnSync('tesseract', ...)` in `vision_ocr_local` and OCR fallback with async runner.
+- [ ] Replace `spawnSync('ffmpeg', ...)` in `vision_video_describe` with async runner.
+- [ ] Replace `spawnSync(chrome, ...)` in `vision_html_screenshot` / `vision_page_persist` with async runner.
 
-## Phase 2: API Key Secret Masking (#190)
-- [ ] Mask `apiKey` in `GET /channels` and `GET /config`.
-- [ ] Do not overwrite existing `apiKey` with mask value on save in `POST /channels`.
-- [ ] Support credential references (`keysFromEnv`).
+## Phase 2: Tool Registry Deduplication & Cleanup
+- [ ] Collapse `vision_math_extract` into `vision_extract_formula` (keep backwards compatibility).
+- [ ] Collapse `vision_qr_read` into `vision_scan_barcode`.
+- [ ] Collapse `vision_describe_structured` into `vision_extract_structured`.
+- [ ] Collapse `vision_diff` / `vision_pixel_diff` into `vision_compare`.
+- [ ] Remove dead stubs `vision_browser_click` and `vision_browser_navigate` (clean up prompt bloat).
+- [ ] Ensure all aliases and unified tools have clean schemas and descriptions.
 
-## Phase 3: settingsScope Snapshot Binding (#191)
-- [ ] Add `settingsScope` to `exports.inject` in `lib/client.js` and `package.json` (if required).
-- [ ] Bind `ctx.settingsScope.bind({ namespace: 'dsh-vision-bridge' })` in `lib/client.js`.
-- [ ] Sync settings card state with settingsScope snapshot.
+## Phase 3: Modular Code Organization
+- [ ] Create `lib/process.js` for async binary executions (Tesseract, pdftoppm, ffmpeg, chrome).
+- [ ] Keep `lib/index.js` clean and maintainable.
 
 ## Phase 4: Testing & Verification
-- [ ] Add tests in `test/regression.test.js` for all 3 issues.
-- [ ] Run `npm test` and verify 100% pass rate.
-- [ ] Commit, PR, merge, and clean up.
+- [ ] Run full regression test suite (`npm test`).
+- [ ] Verify non-blocking async execution in automated tests.
+- [ ] Verify tool contracts and deduplicated tools.

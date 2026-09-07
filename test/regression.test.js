@@ -731,3 +731,30 @@ describe('group 15 security and settings audit (#190, #191, #192)', async () => 
     assert.ok(clientCode.includes('scope.subscribe'), 'scope.subscribe reactive listener present');
   });
 });
+
+// ── Group 16: Async Non-Blocking Process Runner & Stubs Cleanup ───────────
+describe('group 16 async non-blocking execution and stubs cleanup (#195)', async () => {
+  it('checks runProcessAsync with node binary', async () => {
+    const { runProcessAsync, isBinaryAvailable } = await import('../lib/process.js');
+    assert.strictEqual(typeof runProcessAsync, 'function');
+    assert.strictEqual(typeof isBinaryAvailable, 'function');
+
+    const res = await runProcessAsync(process.execPath, ['-e', 'console.log("async-ok")']);
+    assert.strictEqual(res.code, 0);
+    assert.strictEqual(res.stdout.trim(), 'async-ok');
+    assert.strictEqual(res.error, null);
+
+    const available = await isBinaryAvailable(process.execPath, '--version');
+    assert.strictEqual(available, true);
+  });
+
+  it('checks that dead stubs are removed from tool registration in index.js', async () => {
+    const fsMod = await import('node:fs');
+    const indexPath = path.join(repoRoot, 'lib/index.js');
+    const indexSrc = fsMod.readFileSync(indexPath, 'utf8');
+
+    assert.ok(!indexSrc.includes("name: 'vision_browser_click'"), 'vision_browser_click stub removed');
+    assert.ok(!indexSrc.includes("name: 'vision_browser_navigate'"), 'vision_browser_navigate stub removed');
+    assert.ok(!indexSrc.includes("spawnSync("), 'all spawnSync calls replaced with non-blocking async runner');
+  });
+});
