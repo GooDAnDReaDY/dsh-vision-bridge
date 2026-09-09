@@ -33,7 +33,7 @@ vision-инструментов.
 ## Build / test
 
 ```bash
-npm test          # 42 теста
+npm test          # весь набор node --test (счётчик — в выводе прогона)
 node --check lib/*.js
 ```
 

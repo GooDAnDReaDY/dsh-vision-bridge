@@ -39,7 +39,7 @@
 * **服务端模态桥接 (v0.5.3+)**：自动包装 `ctx.llm.resolveModelInfo` 和 `ctx.llm.listModels`，使会话网关允许所有模型接收图像附件。
 * **自动图像改写 (`agent/pre-step` 与 `llm/stream`)**：自动拦截图片，调用独立的视觉模型（如 Gemini、Claude、Qwen-VL 或本地 Ollama）生成描述，并将图片替换为文本提示 `[用户上传了图片。内容描述：...]` 传递给纯文本模型。
 * **原生直通 (Native Passthrough)**：自动识别原生支持视觉的模型并直接传递图像，无需重复转换。
-* **26 个专用视觉工具**：提供 OCR、目标定位 (grounding)、UI 结构解析和图像比对等完整工具套件。
+* **约 40 个专用视觉工具**：提供 OCR、目标定位 (grounding)、UI 结构解析、表格/公式提取、二维码识别、UI 流程重建与多模型共识等完整工具套件。
 
 ---
 
@@ -106,7 +106,7 @@ dsh-vision-bridge:
   cacheMaxEntries: 200
   timeoutMs: 120000
   channels: []
-  channelStrategy: fallback
+  channelFallback: sequential
 ```
 
 ---

@@ -21,7 +21,7 @@
 - DEV / OPT: DEV `/mnt/external/Project/DEV/dhsplugins/dsh-vision-bridge`; runtime — профиль `web`
 - Точки запуска и пользовательские entry points: `dsh plugin --profile web add @goodandready/dsh-vision-bridge`; HTTP-роуты `/dsh-vision-bridge/*`
 - Основные компоненты и ссылки на подробную документацию: `lib/index.js` (хост), `lib/channels.js` (драйвер каналов), `lib/client.js` (карточка настроек), `lib/cache.js`, `lib/evidence.js`
-- Проверенные команды build / test: `npm test` (42 теста), `node --check lib/*.js`
+- Проверенные команды build / test: `npm test` (исполняющий набор node --test; актуальный счётчик — вывод прогона/CI), `node --check lib/*.js`
 - Штатный deploy: установка опубликованной npm-версии в профиль `web` + `systemctl restart dsh-web`
 - Дата и способ последней проверки: `27.08.2026, curl /doctor /stats /channels`
 
@@ -83,11 +83,11 @@
 
 ## Testing
 
-- Обязательные проверки: `node --check lib/*.js`, `npm test` (42 теста)
+- Обязательные проверки: `node --check lib/*.js`, `npm test` (весь набор зелёный; счётчик не фиксируется в доке — см. вывод прогона)
 - Unit-тесты: `test/regression.test.js`, `test/eval.test.js`
 - Integration-тесты: smoke через HTTP-роуты на production
 - Lint/typecheck: нет отдельного линтера; `node --check`
-- Критерии готовности: 42/42 тестов, `node --check` чистый, smoke-роуты отвечают
+- Критерии готовности: весь тестовый набор зелёный, `node --check` чистый, smoke-роуты отвечают
 
 ### Definition of Done
 

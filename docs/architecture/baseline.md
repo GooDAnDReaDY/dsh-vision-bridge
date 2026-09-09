@@ -37,7 +37,7 @@ dsh-catalog / openai-compatible / ollama / lmstudio (preset) / webhook /
 custom (template). Sequential или parallel-race fallback + cooldown +
 placeholder mode + auto-Ollama probe + keysFromEnv.
 
-## Tools (25)
+## Tools (~40; vision_consensus — по consensusEnabled)
 
 Core: describe_image, read_image (bridge)
 Grounding: ground/crop/detect/compare/present

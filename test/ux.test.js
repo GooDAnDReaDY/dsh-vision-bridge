@@ -43,26 +43,38 @@ describe('#203 removed fake settings are gone from code and UI', () => {
 })
 
 describe('#203 maskPII masks the prompt actually sent to the vision model', async () => {
-  it('non-generic describe_image questions are masked before ctx.llm.stream', async () => {
+  it('generic describe_image questions are masked before the vision call', async () => {
     const { ctx } = await setupWithAttachment({ config: { maskPII: true } })
-    const before = ctx.streams.length
     const tool = ctx.toolDefs.get('describe_image')
+    // 'what...picture' matches the generic regex -> callVisionModelWithBytes
     await tool.execute(
-      { attachmentIds: ['att-1'], question: 'what does the code at user@example.com show in the picture' },
+      { attachmentIds: ['att-1'], question: 'what contact info does the picture show for user@example.com' },
       undefined,
     )
     const sent = ctx.streams[ctx.streams.length - 1]
     const text = sent.messages[0].content[1].text
     assert.equal(text.includes('user@example.com'), false, 'PII must be masked')
+  })
+
+  it('truly non-generic questions are masked on the direct llm.stream path', async () => {
+    const { ctx } = await setupWithAttachment({ config: { maskPII: true } })
+    const tool = ctx.toolDefs.get('describe_image')
+    // 'transcribe...' does NOT match the generic regex -> direct llm.stream
+    await tool.execute(
+      { attachmentIds: ['att-1'], question: 'transcribe the code block shown to user@example.com' },
+      undefined,
+    )
+    const sent = ctx.streams[ctx.streams.length - 1]
+    const text = sent.messages[0].content[1].text
+    assert.equal(text.includes('user@example.com'), false, 'PII must be masked on the direct path too')
     assert.ok(text.includes('[EMAIL]'))
-    assert.ok(ctx.streams.length > before)
   })
 
   it('maskPII=false leaves the question untouched', async () => {
     const { ctx } = await setupWithAttachment()
     const tool = ctx.toolDefs.get('describe_image')
     await tool.execute(
-      { attachmentIds: ['att-1'], question: 'what does the code at user@example.com show in the picture' },
+      { attachmentIds: ['att-1'], question: 'transcribe the code block shown to user@example.com' },
       undefined,
     )
     const sent = ctx.streams[ctx.streams.length - 1]

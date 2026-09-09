@@ -68,7 +68,7 @@ graph LR
 ## ✨ Key Features
 
 ### 1. Processing Modes
-* **`hybrid` (default)**: Automatically describes attached images in chat turns while keeping all 26 explicit vision tools available for follow-up reasoning.
+* **`hybrid` (default)**: Automatically describes attached images in chat turns while keeping all ~40 explicit vision tools available for follow-up reasoning.
 * **`llm`**: Pure auto-rewrite mode — images are transparently converted to text context; tools remain callable.
 * **`tools`**: Auto-rewrite disabled — the chat model is expected to explicitly invoke `describe_image` or OCR tools when required.
 
@@ -82,7 +82,7 @@ Chain multiple vision backends with automatic failover, parallel racing, and cir
 ### 3. High-Performance LRU Description Cache
 Caches vision responses by `hash(bytes + prompt + model + mode)` to eliminate redundant vision API calls and save token quota on repeated questions about the same image.
 
-### 4. Comprehensive Visual Tool Inventory (26 Tools)
+### 4. Comprehensive Visual Tool Inventory (~40 Tools)
 
 | Tool Category | Tools | Description |
 |---|---|---|
@@ -90,7 +90,7 @@ Caches vision responses by `hash(bytes + prompt + model + mode)` to eliminate re
 | **Geometry & Detection** | `vision_ground`, `vision_crop`, `vision_detect`, `vision_compare`, `vision_present` | Bounding box coordinates (0–1000 scale), object inventory, multi-image comparison. |
 | **OCR & Text** | `vision_ocr`, `vision_ocr_local`, `vision_long_ocr`, `vision_trace`, `vision_colors`, `vision_extract_foreground` | Transcription, local Tesseract OCR (offline), long screenshot stitching, SVG tracing, color palettes. |
 | **Structured & UI** | `vision_describe_structured`, `vision_vqa`, `vision_ui_layout`, `vision_translate_image` | JSON breakdown (`{summary, ocr, layout, entities}`), short VQA, UI section analysis. |
-| **Pixel & Diagnostics** | `vision_pixel_diff`, `vision_tile`, `vision_deskew`, `vision_enhance` | Visual diff ratio, image preprocessing, enhancement, tiling. |
+| **Pixel & Diagnostics** | `vision_pixel_diff`, `vision_quality_check` | Semantic visual diff, quality scoring (blur/lighting). |
 
 ---
 
@@ -127,7 +127,7 @@ dsh-vision-bridge:
   
   # Multi-channel routing configuration
   channels: []
-  channelStrategy: fallback # 'fallback' | 'race'
+  channelFallback: sequential # 'sequential' | 'parallel-race'
 ```
 
 ### Parameter Reference
@@ -141,7 +141,7 @@ dsh-vision-bridge:
 | `cacheEnabled` | `boolean` | `true` | Enables LRU caching for descriptions. |
 | `cacheMaxEntries` | `number` | `200` | Maximum number of cached items in memory. |
 | `timeoutMs` | `number` | `120000` | Execution timeout in milliseconds. |
-| `channelStrategy` | `string` | `"fallback"` | Channel routing strategy (`fallback`, `race`). |
+| `channelFallback` | `string` | `"sequential"` | Channel routing (`sequential`, `parallel-race`); ordering via `channelOrderMode`. |
 
 ---
 
