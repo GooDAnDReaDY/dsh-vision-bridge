@@ -3,6 +3,9 @@
 // Effects are executed immediately (so webServer routes and the modality
 // bridge register exactly like in production); disposers are ignored.
 
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
 const TINY_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
   'base64',
@@ -29,7 +32,9 @@ export function testConfig(overrides = {}) {
     cacheMaxEntries: 256,
     nativePassthrough: 'prefer',
     evidencePersist: false,
-    evidenceDir: '',
+    // The host defaults the journal/evidence dir to cwd; keep test writes out
+    // of the repository (the cwd default itself is tracked in #203).
+    evidenceDir: join(tmpdir(), 'vbr-test-evidence-' + process.pid),
     evidenceMaxEntries: 2000,
     allowedImageDirs: [],
     auditLog: 'off',
