@@ -161,11 +161,11 @@ export function fakeRes() {
 }
 
 /** req double that answers readBody()-style on('data'/'end') handlers. */
-export function fakeReq({ method = 'GET', headers = {}, body = '' } = {}) {
+export function fakeReq({ method = 'GET', headers = {}, body = '', url = '/dsh-vision-bridge/x' } = {}) {
   return {
     method,
     headers,
-    url: '/dsh-vision-bridge/x',
+    url,
     on(event, cb) {
       if (event === 'data' && body) cb(body)
       if (event === 'end') cb()
