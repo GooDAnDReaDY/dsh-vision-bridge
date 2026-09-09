@@ -9,6 +9,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - name: install dependencies (peers resolve automatically)
+        run: npm install --no-audit --no-fund
       - name: syntax check
         run: node --check lib/index.js && node --check lib/vision-core.js && node --check lib/channels.js && node --check lib/client.js
       - name: unit and smoke tests
