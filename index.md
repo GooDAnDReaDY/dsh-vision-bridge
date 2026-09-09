@@ -22,7 +22,8 @@ vision-инструментов.
 
 ## Компоненты
 
-- `lib/index.js` — хост: sanitizer, инструменты, каналы, роуты, skill
+- `lib/index.js` — хост: apply(), инструменты, каналы, роуты, слушатели
+- `lib/vision-core.js` — чистое ядро: Config и module-level хелперы (#206)
 - `lib/channels.js` — мультиканальный драйвер (6 типов), ротация ключей, Retry-After
 - `lib/client.js` — браузерная карточка настроек
 - `lib/cache.js` — LRU-кэш + составной ключ

@@ -26,3 +26,6 @@ Thumbs.db
 .vscode/
 *.swp
 pnpm-lock.yaml
+
+# build artifacts
+*.tgz
