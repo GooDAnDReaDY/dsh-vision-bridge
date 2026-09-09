@@ -204,8 +204,8 @@ describe('#211 apiKeyRef indirection', async () => {
     const handler = ctx.routes.get('/dsh-vision-bridge/channels').handler
     // The card sends the list back reordered, keys masked for display.
     const reordered = [
-      { type: 'openai-compatible', baseURL: 'http://b/v1', model: 'm', apiKey: 'zzzz...zzzz' },
-      { type: 'openai-compatible', baseURL: 'http://a/v1', model: 'm', apiKey: 'zzzz...zzzz' },
+      { type: 'openai-compatible', baseURL: 'http://b.invalid/v1', model: 'm', apiKey: 'zzzz...zzzz' },
+      { type: 'openai-compatible', baseURL: 'http://a.invalid/v1', model: 'm', apiKey: 'zzzz...zzzz' },
     ]
     const res = fakeRes()
     await handler(fakeReq({
