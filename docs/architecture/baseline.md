@@ -14,7 +14,7 @@ image→text rewrite (turns не падают), а явные vision-tools (25 �
 ## Поток данных
 
 ```
-image (user/tool) → agent/pre-step + llm/stream (sanitizeAllowed gate)
+image (user/tool) → agent/pre-step + llm/stream (sanitizeAllowed gate)  [~40 tools; vision_consensus — по consensusEnabled]
   → текст-only модель: rewrite image→text через vision LLM (task-aware prompt)
   → tools для явной инспекции
   → cache LRU → evidence.json (опционально persist)

@@ -39,7 +39,7 @@ When interacting with text-only LLM models (e.g. `deepseek-v3`, Qwen text-only v
 * **Server-Side Modality Bridge (v0.5.3+)**: Decorates `ctx.llm.resolveModelInfo` and `ctx.llm.listModels` so the session controller accepts image attachments on all models when bridging is active.
 * **Automatic Image Rewrite (`agent/pre-step` & `llm/stream`)**: Automatically intercepts image blocks, routes them to a configured vision model (e.g. Gemini, Claude, Qwen-VL, or local Ollama), receives a descriptive synthesis, and rewrites the image block into text context `[The user attached an image. Description: ...]` before handing it to the text-only chat model.
 * **Native Passthrough**: Automatically detects models that natively support vision and allows images to pass directly without unnecessary rewriting.
-* **Rich Visual Tool Suite**: Exposes 26 specialized tools for on-demand OCR, visual question answering, bounding box grounding, UI layout breakdown, and pixel differencing.
+* **Rich Visual Tool Suite**: Exposes ~40 specialized tools for on-demand OCR (incl. local Tesseract), visual question answering, bounding-box grounding, document/table/formula extraction, QR/barcode reading, UI-flow reconstruction, multi-model consensus and more. `vision_consensus` is opt-in via the `consensusEnabled` setting.
 
 ---
 
@@ -151,5 +151,8 @@ MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)
 
 ### 15. 🛡️ Enterprise Security & Settings Governance (`v0.5.27`)
 * **Masked Secrets**: `GET /channels` automatically masks sensitive provider API keys (`sk-p...7890` or `********`) and reports `hasApiKey: true` to prevent secret leakage in browser DevTools/XHR. `POST /channels` preserves existing keys when a mask is submitted.
-* **CSRF & Origin Guard**: All mutating endpoints (`/config`, `/channels`, `/upload-pdf`, `/test`) validate `sec-fetch-site !== 'cross-site'` via `isTrustedSettingsRequest`, rejecting cross-origin attacks with `403 Forbidden`.
+* **CSRF & Origin Guard**: All mutating and cost-incurring endpoints (`/config`, `/channels`, `/upload-pdf`, `/test`, `/bench`, `/batch`, `DELETE /journal`, `DELETE /cache`, and `/doctor?probe=1`) validate `sec-fetch-site !== 'cross-site'` via `isTrustedSettingsRequest`, rejecting cross-origin attacks with `403 Forbidden`. The default `GET /doctor` report is static (no channel probes).
+* **SSRF fetch policy**: model-supplied image URLs are fetched only through `safeFetch` — non-http(s) schemes, localhost names and private/loopback/link-local hosts (incl. IPv4-mapped IPv6 and NAT64) are refused on every redirect hop; response bodies are capped. Use `allowedUrlHosts` to explicitly re-allow an internal endpoint.
+* **apiKeyRef**: channels may reference a credential-service entry or environment variable by NAME instead of storing a plaintext `apiKey` in settings; keys resolve at call time. `GET /channels` keeps masking values; key preservation on save matches channels by identity, not position.
+* **Privacy & honesty**: `maskPII`, `stripEXIF`, `auditLog` and `consensusEnabled` settings are wired end-to-end; the previously decorative face-blur / NSFW / tiling toggles and no-op presets were removed.
 * **Native settingsScope Integration**: Settings UI binds directly to `ctx.settingsScope` (`namespace: 'dsh-vision-bridge'`), supporting reactive snapshot listeners and kernel state synchronization.

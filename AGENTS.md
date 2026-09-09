@@ -101,7 +101,7 @@
 
 - Репозиторий Gitea: `goodandready/dsh-vision-bridge`
 - Основная ветка: `main`
-- Issue labels: `hotfix`, `priority/H|M|L`, `status/confirmed`, `type/docs|feature|refactor|test`
+- Issue labels: каноническая scoped-схема корневого AGENTS.md (ровно одна `priority/*`, одна `type/*`, максимум одна `status/*`; префиксы `[critical]/H:/M:/L:` в заголовке). Legacy `priority/H|M|L` запрещены; дубли меток слиты в #213
 - Milestones: `0.4.3 — streaming + observability` (id 29)
 - Releases / protected tags: `v<version>`
 
@@ -111,8 +111,8 @@
 - Допустимые commit types: `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `build`, `ci`, `chore`
 - Как связываются коммиты с Gitea issues: footer `Refs: #<номер>`
 - Один завершённый логический результат = один commit: `да`
-- Текущая версия продукта: `0.4.3`
-- Planned / active milestone: `0.4.3 — streaming + observability`
+- Текущая версия продукта: источник истины — `package.json`; релиз по явному «ок» владельца
+- Planned / active milestone: серия issues #197–#215 (ревью качества 2026-09-09); релиз после всех пачек
 - Правило повышения `x.y.z`: обычный релиз меняет только `z`; переход `y` — только по явному согласованию пользователя
 
 ## Deployment
@@ -126,9 +126,9 @@
 
 ## Known Issues And Limitations
 
-- Подтверждённые ограничения: без sharp нет реального downscale (только reject >4MP); `vision_long_ocr` без sharp — single-pass
+- Подтверждённые ограничения: без sharp нет реального downscale/stripEXIF/тайлинга (fallback в исходные байты или отказ); `vision_long_ocr` без sharp — single-pass; DNS-rebinding TOCTOU и chrome-side DNS — принятые ограничения SSRF-политики (DESIGN.md разд. 5)
 - Связанные issues: #90 (inline preview — display-layer, отложен)
-- Известный технический долг: карточка использует свои треугольники `▴/▾` вместо ядрового шеврона (issue #111)
+- Известный технический долг: карточка использует ядровый шеврон с fallback (issue #111 закрыта); style-тег помечен каноническим `data-dsh-plugin` (#209); монолит `lib/index.js` частично разделён (#206, пачка 4)
 
 ## Open Questions
 
