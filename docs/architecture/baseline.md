@@ -14,7 +14,7 @@ image→text rewrite (turns не падают), а явные vision-tools (25 �
 ## Поток данных
 
 ```
-image (user/tool) → agent/pre-step + llm/stream (sanitizeAllowed gate)
+image (user/tool) → agent/pre-step + llm/stream (sanitizeAllowed gate)  [~40 tools; vision_consensus — по consensusEnabled]
   → текст-only модель: rewrite image→text через vision LLM (task-aware prompt)
   → tools для явной инспекции
   → cache LRU → evidence.json (опционально persist)
@@ -37,7 +37,7 @@ dsh-catalog / openai-compatible / ollama / lmstudio (preset) / webhook /
 custom (template). Sequential или parallel-race fallback + cooldown +
 placeholder mode + auto-Ollama probe + keysFromEnv.
 
-## Tools (25)
+## Tools (~40; vision_consensus — по consensusEnabled)
 
 Core: describe_image, read_image (bridge)
 Grounding: ground/crop/detect/compare/present

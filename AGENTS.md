@@ -21,7 +21,7 @@
 - DEV / OPT: DEV `/mnt/external/Project/DEV/dhsplugins/dsh-vision-bridge`; runtime — профиль `web`
 - Точки запуска и пользовательские entry points: `dsh plugin --profile web add @goodandready/dsh-vision-bridge`; HTTP-роуты `/dsh-vision-bridge/*`
 - Основные компоненты и ссылки на подробную документацию: `lib/index.js` (хост), `lib/channels.js` (драйвер каналов), `lib/client.js` (карточка настроек), `lib/cache.js`, `lib/evidence.js`
-- Проверенные команды build / test: `npm test` (42 теста), `node --check lib/*.js`
+- Проверенные команды build / test: `npm test` (исполняющий набор node --test; актуальный счётчик — вывод прогона/CI), `node --check lib/*.js`
 - Штатный deploy: установка опубликованной npm-версии в профиль `web` + `systemctl restart dsh-web`
 - Дата и способ последней проверки: `27.08.2026, curl /doctor /stats /channels`
 
@@ -83,11 +83,11 @@
 
 ## Testing
 
-- Обязательные проверки: `node --check lib/*.js`, `npm test` (42 теста)
+- Обязательные проверки: `node --check lib/*.js`, `npm test` (весь набор зелёный; счётчик не фиксируется в доке — см. вывод прогона)
 - Unit-тесты: `test/regression.test.js`, `test/eval.test.js`
 - Integration-тесты: smoke через HTTP-роуты на production
 - Lint/typecheck: нет отдельного линтера; `node --check`
-- Критерии готовности: 42/42 тестов, `node --check` чистый, smoke-роуты отвечают
+- Критерии готовности: весь тестовый набор зелёный, `node --check` чистый, smoke-роуты отвечают
 
 ### Definition of Done
 
@@ -101,7 +101,7 @@
 
 - Репозиторий Gitea: `goodandready/dsh-vision-bridge`
 - Основная ветка: `main`
-- Issue labels: `hotfix`, `priority/H|M|L`, `status/confirmed`, `type/docs|feature|refactor|test`
+- Issue labels: каноническая scoped-схема корневого AGENTS.md (ровно одна `priority/*`, одна `type/*`, максимум одна `status/*`; префиксы `[critical]/H:/M:/L:` в заголовке). Legacy `priority/H|M|L` запрещены; дубли меток слиты в #213
 - Milestones: `0.4.3 — streaming + observability` (id 29)
 - Releases / protected tags: `v<version>`
 
@@ -111,8 +111,8 @@
 - Допустимые commit types: `feat`, `fix`, `refactor`, `perf`, `test`, `docs`, `build`, `ci`, `chore`
 - Как связываются коммиты с Gitea issues: footer `Refs: #<номер>`
 - Один завершённый логический результат = один commit: `да`
-- Текущая версия продукта: `0.4.3`
-- Planned / active milestone: `0.4.3 — streaming + observability`
+- Текущая версия продукта: источник истины — `package.json`; релиз по явному «ок» владельца
+- Planned / active milestone: серия issues #197–#215 (ревью качества 2026-09-09); релиз после всех пачек
 - Правило повышения `x.y.z`: обычный релиз меняет только `z`; переход `y` — только по явному согласованию пользователя
 
 ## Deployment
@@ -126,9 +126,9 @@
 
 ## Known Issues And Limitations
 
-- Подтверждённые ограничения: без sharp нет реального downscale (только reject >4MP); `vision_long_ocr` без sharp — single-pass
+- Подтверждённые ограничения: без sharp нет реального downscale/stripEXIF/тайлинга (fallback в исходные байты или отказ); `vision_long_ocr` без sharp — single-pass; DNS-rebinding TOCTOU и chrome-side DNS — принятые ограничения SSRF-политики (DESIGN.md разд. 5)
 - Связанные issues: #90 (inline preview — display-layer, отложен)
-- Известный технический долг: карточка использует свои треугольники `▴/▾` вместо ядрового шеврона (issue #111)
+- Известный технический долг: карточка использует ядровый шеврон с fallback (issue #111 закрыта); style-тег помечен каноническим `data-dsh-plugin` (#209); монолит `lib/index.js` частично разделён (#206, пачка 4)
 
 ## Open Questions
 

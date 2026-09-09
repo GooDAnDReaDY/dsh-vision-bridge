@@ -10,8 +10,8 @@ vision-инструментов.
 
 ## Статус
 
-- Версия: `0.4.3` (npm `@goodandready/dsh-vision-bridge`)
-- Milestone: `0.4.3 — streaming + observability`
+- Версия: источник истины — `package.json` (npm `@goodandready/dsh-vision-bridge`); релизы — по явному «ок» владельца
+- Milestone: серия issues #197–#215 (ревью качества 2026-09-09)
 - Runtime: профиль `web` на `192.168.1.111`, `dsh-web`, порт `3080`
 
 ## Entry points
@@ -28,12 +28,12 @@ vision-инструментов.
 - `lib/cache.js` — LRU-кэш + составной ключ
 - `lib/evidence.js` — персистентное хранилище описаний
 - `lib/journal.js` — vision journal (аудит-трейл вызовов)
-- `test/` — 42 теста
+- `test/` — исполняющий набор (node --test): smoke поверх apply() через mock-ctx (test/harness.js), security- и ux- suite
 
 ## Build / test
 
 ```bash
-npm test          # 42 теста
+npm test          # весь набор node --test (счётчик — в выводе прогона)
 node --check lib/*.js
 ```
 

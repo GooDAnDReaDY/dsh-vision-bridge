@@ -176,7 +176,7 @@ describe('route validation — /config POST allow-list', () => {
 describe('client i18n contract', () => {
   it('client registers namespace dsh-vision-bridge via ctx.locale.register', () => {
     const src = readFileSync(path.join(repoRoot, 'lib/client.js'), 'utf8');
-    assert.match(src, /ctx\.locale\.register\(NS,\s*\{\s*en,\s*ru\s*\}\)/);
+    assert.match(src, /ctx\.locale\.register\(NS,\s*\{\s*en\s*\}\)/);
     assert.match(src, /NS\s*=\s*['"'"']dsh-vision-bridge['"'"']/);
   });
   it('client injects locale slot', () => {
@@ -388,7 +388,7 @@ describe('free provider catalog', () => {
 
 // ── Security functions (#135 #136 #137 #138 #139) ─────────────────────────
 describe('security functions', async () => {
-  const { maskPII, maskSystemPaths, stripEXIF, checkNSFW } = await import(path.join(repoRoot, 'lib/index.js'));
+  const { maskPII, maskSystemPaths, stripEXIF } = await import(path.join(repoRoot, 'lib/index.js'));
 
   it('maskPII masks emails', () => {
     const result = maskPII('Contact user@example.com for details');
@@ -422,11 +422,6 @@ describe('security functions', async () => {
     const bytes = Buffer.from([0xff, 0xd8, 0xff, 0xe0]); // JPEG header
     const result = await stripEXIF(bytes, 'image/jpeg');
     assert.ok(result.length > 0);
-  });
-
-  it('checkNSFW returns true (stub)', async () => {
-    const result = await checkNSFW(Buffer.from([0x89, 0x50]));
-    assert.equal(result, true);
   });
 });
 

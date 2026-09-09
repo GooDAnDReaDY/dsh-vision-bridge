@@ -49,13 +49,9 @@ export function testConfig(overrides = {}) {
     imageMaxHeight: 1080,
     imageQuality: 80,
     imageFormat: 'auto',
-    tileLargeImages: true,
-    tileThreshold: 4000000,
     deskew: false,
     enhanceImage: false,
-    blurFaces: false,
     stripEXIF: false,
-    nsfwFilter: false,
     selfCheckEnabled: true,
     consensusEnabled: false,
     detail: 'auto',
@@ -77,8 +73,10 @@ export function createMockCtx(options = {}) {
   const streams = []
   let attSeq = 0
 
+  // Mirror production semantics: scope.get() returns the merged values
+  // (defaults from the base config included).
   const settingsScope = {
-    get: () => ({}),
+    get: () => config,
     update: async () => {},
     unset: async () => {},
   }
