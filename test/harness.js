@@ -77,8 +77,10 @@ export function createMockCtx(options = {}) {
   const streams = []
   let attSeq = 0
 
+  // Mirror production semantics: scope.get() returns the merged values
+  // (defaults from the base config included).
   const settingsScope = {
-    get: () => ({}),
+    get: () => config,
     update: async () => {},
     unset: async () => {},
   }
