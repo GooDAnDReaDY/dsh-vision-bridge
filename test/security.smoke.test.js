@@ -32,6 +32,105 @@ describe('#202 isPrivateIp — private/loopback/link-local ranges', async () => 
     }
     assert.equal(mod.isPrivateIp('2606:4700::1'), false)
   })
+
+  it('flags IPv4-mapped IPv6 (dotted and hex) and NAT64 (review CRITICAL)', () => {
+    for (const ip of ['::ffff:127.0.0.1', '::ffff:10.0.0.1', '::FFFF:192.168.1.5', '::ffff:7f00:1', '::ffff:a00:1', '64:ff9b::7f00:1']) {
+      assert.equal(mod.isPrivateIp(ip), true, ip)
+    }
+    assert.equal(mod.isPrivateIp('::ffff:8.8.8.8'), false, 'public mapped IPv4 stays public')
+  })
+
+  it('isSafeFetchUrl refuses the mapped-IPv6 literal bypass', async () => {
+    assert.equal(await mod.isSafeFetchUrl('http://[::ffff:127.0.0.1]/'), false)
+    assert.equal(await mod.isSafeFetchUrl('http://[::ffff:10.0.0.1]/x'), false)
+    assert.equal(await mod.isSafeFetchUrl('http://[::ffff:7f00:1]/x'), false)
+  })
+})
+
+describe('#202 safeFetch — policy on every redirect hop', async () => {
+  const mod = await import('../lib/index.js')
+  const stubRes = (status, location) => ({
+    status,
+    ok: status >= 200 && status < 300,
+    headers: { get: (n) => (n.toLowerCase() === 'location' ? location : null) },
+  })
+
+  it('follows redirects between public hosts and returns the final response', async () => {
+    const calls = []
+    const fetchStub = async (url) => {
+      calls.push(url)
+      return calls.length === 1 ? stubRes(302, 'http://cdn2.example/img') : stubRes(200)
+    }
+    const res = await mod.safeFetch('http://cdn.example/img', {
+      allowedHosts: [],
+      fetch: fetchStub,
+      lookup: async () => [{ address: '93.184.216.34', family: 4 }],
+    })
+    assert.equal(res.status, 200)
+    assert.equal(calls.length, 2)
+  })
+
+  it('refuses a redirect that lands on a private host', async () => {
+    const fetchStub = async () => stubRes(302, 'http://169.254.169.254/latest/meta-data/')
+    await assert.rejects(
+      () => mod.safeFetch('http://cdn.example/img', {
+        allowedHosts: [],
+        fetch: fetchStub,
+        lookup: async () => [{ address: '93.184.216.34', family: 4 }],
+      }),
+      /fetch policy/,
+    )
+  })
+
+  it('caps the redirect chain', async () => {
+    const fetchStub = async () => stubRes(302, 'http://loop.example/a')
+    await assert.rejects(
+      () => mod.safeFetch('http://loop.example/a', {
+        allowedHosts: ['loop.example'],
+        fetch: fetchStub,
+        maxRedirects: 2,
+      }),
+      /too many redirects/,
+    )
+  })
+
+  it('allows a public redirect to a non-public host when allowlisted explicitly', async () => {
+    const fetchStub = async () => stubRes(200)
+    const res = await mod.safeFetch('http://app.example/x', {
+      allowedHosts: ['app.example', '127.0.0.1'],
+      fetch: fetchStub,
+    })
+    assert.equal(res.status, 200)
+  })
+})
+
+describe('#200 isPathAllowed — boundary-aware prefix match', async () => {
+  const mod = await import('../lib/index.js')
+
+  it('keeps the directory boundary: /etc does not allow /etcpasswd', () => {
+    assert.equal(mod.isPathAllowed('/etc/hostname', ['/etc']), true)
+    assert.equal(mod.isPathAllowed('/etcpasswd', ['/etc']), false)
+    assert.equal(mod.isPathAllowed('/etc', ['/etc/']), true)
+    assert.equal(mod.isPathAllowed('C:\\etc\\passwd', ['C:\\etc']), true)
+    assert.equal(mod.isPathAllowed('C:\\etcpasswd', ['C:\\etc']), false)
+  })
+})
+
+describe('#202-review headless-chrome tools honor the fetch policy', async () => {
+  it('vision_page_persist refuses a loopback URL without launching chrome', async () => {
+    const { ctx } = await setupWithAttachment()
+    const tool = ctx.toolDefs.get('vision_page_persist')
+    const res = await tool.execute({ url: 'http://127.0.0.1:3080/' }, undefined)
+    assert.match(res.note, /refused by fetch policy/)
+    assert.equal(res.attachmentId, '')
+  })
+
+  it('vision_browser_snapshot refuses a loopback URL', async () => {
+    const { ctx } = await setupWithAttachment()
+    const tool = ctx.toolDefs.get('vision_browser_snapshot')
+    const res = await tool.execute({ url: 'http://127.0.0.1:3080/' }, undefined)
+    assert.match(res.snapshot, /refused by fetch policy/)
+  })
 })
 
 describe('#202 isSafeFetchUrl — fetch policy for model-supplied URLs', async () => {
