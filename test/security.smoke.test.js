@@ -189,14 +189,18 @@ describe('#211 apiKeyRef indirection', async () => {
   })
 
   it('masked keys are preserved per channel identity, not array position', async () => {
-    const { ctx } = await setupWithAttachment({
+    // Direct apply() without the attachment backstop: pre-set channels must
+    // not trigger any channel fetch during setup.
+    const mod = await import('../lib/index.js')
+    const ctx = createMockCtx({
       config: {
         channels: [
-          { type: 'openai-compatible', baseURL: 'http://a/v1', model: 'm', apiKey: 'real-a' },
-          { type: 'openai-compatible', baseURL: 'http://b/v1', model: 'm', apiKey: 'real-b' },
+          { type: 'openai-compatible', baseURL: 'http://a.invalid/v1', model: 'm', apiKey: 'real-a' },
+          { type: 'openai-compatible', baseURL: 'http://b.invalid/v1', model: 'm', apiKey: 'real-b' },
         ],
       },
     })
+    mod.apply(ctx, ctx.config)
     const handler = ctx.routes.get('/dsh-vision-bridge/channels').handler
     // The card sends the list back reordered, keys masked for display.
     const reordered = [
@@ -228,9 +232,11 @@ describe('#211 apiKeyRef indirection', async () => {
   })
 
   it('apiKeyRef itself is not a secret and survives GET /channels', async () => {
-    const { ctx } = await setupWithAttachment({
-      config: { channels: [{ type: 'vllm', baseURL: 'http://x/v1', model: 'm', apiKeyRef: 'PROD_KEY' }] },
+    const mod = await import('../lib/index.js')
+    const ctx = createMockCtx({
+      config: { channels: [{ type: 'vllm', baseURL: 'http://x.invalid/v1', model: 'm', apiKeyRef: 'PROD_KEY' }] },
     })
+    mod.apply(ctx, ctx.config)
     const handler = ctx.routes.get('/dsh-vision-bridge/channels').handler
     const res = fakeRes()
     await handler(fakeReq({ method: 'GET' }), res)
