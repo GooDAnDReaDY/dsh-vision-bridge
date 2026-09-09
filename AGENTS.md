@@ -27,7 +27,7 @@
 
 ## Essential Files
 
-- `lib/index.js` — хост: sanitizer, инструменты, каналы, роуты, skill
+- `lib/index.js` — хост: apply(), инструменты, каналы, роуты, слушатели; `lib/vision-core.js` — чистое ядро: Config + module-level хелперы (#206)
 - `lib/channels.js` — мультиканальный драйвер (6 типов), ротация ключей, Retry-After
 - `lib/client.js` — браузерная карточка настроек (settings.plugin.item)
 - `lib/cache.js` — LRU-кэш + составной ключ
@@ -43,7 +43,7 @@
 - Архитектурный подход: серверная половина — модуль cordis; браузерная — `window.__ModuleLoader__.load`; общение только через HTTP-роуты `/dsh-vision-bridge/*`
 - Основные API и интерфейсы: `POST /retrieve` нет; роуты `/config /channels /models /test /stats /bench /costs /cache /doctor`
 - Источник истины для данных: конфиг плагина (`settings.yaml` → `dsh-vision-bridge:`), кэш описаний
-- Источник истины для конфигурации: `Config` (schemastery) в `lib/index.js`
+- Источник истины для конфигурации: `Config` (schemastery) в `lib/vision-core.js`
 
 ## Constraints (MUST NOT)
 
@@ -128,7 +128,7 @@
 
 - Подтверждённые ограничения: без sharp нет реального downscale/stripEXIF/тайлинга (fallback в исходные байты или отказ); `vision_long_ocr` без sharp — single-pass; DNS-rebinding TOCTOU и chrome-side DNS — принятые ограничения SSRF-политики (DESIGN.md разд. 5)
 - Связанные issues: #90 (inline preview — display-layer, отложен)
-- Известный технический долг: карточка использует ядровый шеврон с fallback (issue #111 закрыта); style-тег помечен каноническим `data-dsh-plugin` (#209); монолит `lib/index.js` частично разделён (#206, пачка 4)
+- Известный технический долг: ядро выделено в `lib/vision-core.js` (#206, пачка 4); полный разъезд tools/* по доменам — отдельная итерация после релиза; `latencyMs`/прочие хвосты ревью закрыты
 
 ## Open Questions
 

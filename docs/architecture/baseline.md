@@ -8,7 +8,7 @@ image→text rewrite (turns не падают), а явные vision-tools (25 �
 
 ## Две половины
 
-- `lib/index.js` — host (cordis): Config, apply, tools (25), channels, routes, skill.
+- `lib/index.js` — host (cordis): apply, tools (~40), routes, listeners; `lib/vision-core.js` — чистое ядро: Config + module-level хелперы (#206); `lib/channels.js` — драйвер каналов.
 - `lib/client.js` — browser: коллапсируемая карточка в Plugins-tab.
 
 ## Поток данных

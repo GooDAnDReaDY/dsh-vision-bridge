@@ -1,0 +1,26 @@
+# #208: CI — run the executable suite and the DSH size guard on every push/PR.
+name: test
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: install dependencies (peers resolve automatically)
+        run: npm install --no-audit --no-fund
+      - name: syntax check
+        run: node --check lib/index.js && node --check lib/vision-core.js && node --check lib/channels.js && node --check lib/client.js
+      - name: unit and smoke tests
+        run: npm test
+      - name: package size guard (DSH store limit 262144 bytes/file)
+        run: |
+          npm pack --dry-run --json > pack.json
+          node -e '
+            const data = JSON.parse(require("fs").readFileSync("pack.json", "utf8"));
+            const bad = (data[0].files || []).filter((f) => f.size > 262144);
+            for (const f of bad) console.error("BLOCKED", f.size, f.path);
+            process.exit(bad.length ? 1 : 0);
+          '
