@@ -154,6 +154,14 @@ describe('#204 channelKey distinguishes vllm/sglang endpoints', async () => {
     assert.notEqual(a, b, 'different baseURLs must not share a key')
     assert.notEqual(a, s, 'vllm and sglang must not share a key')
   })
+
+  it('keeps the established key format for pre-existing channel types', () => {
+    assert.equal(channelKey({ type: 'dsh-catalog', provider: 'p', model: 'm' }), 'dsh-catalog:p/m')
+    assert.equal(channelKey({ type: 'ollama', model: 'llava' }), 'ollama:http://localhost:11434/v1/llava')
+    assert.equal(channelKey({ type: 'openai-compatible', baseURL: 'http://x/v1', model: 'm' }), 'openai-compatible:http://x/v1/m')
+    assert.equal(channelKey({ type: 'custom', baseURL: 'http://x', model: 'm' }), 'custom:http://x/m')
+    assert.equal(channelKey({ type: 'webhook', url: 'http://hook' }), 'webhook:http://hook')
+  })
 })
 
 describe('harness sanity — apply() effects and listeners behave like production', async () => {
