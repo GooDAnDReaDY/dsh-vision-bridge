@@ -24,3 +24,25 @@
 - Секретные ключи API никогда не возвращаются в открытом виде в браузер через GET-запросы.
 - Мутирующие запросы защищены гардом `isTrustedSettingsRequest` (`sec-fetch-site !== 'cross-site'`).
 - Временные файлы в `/tmp` гарантированно очищаются в блоке `finally`.
+
+## 5. Security notes (batch 2, #200-#211)
+
+- Серверный fetch URL-источников (`describe_image` urls, `inspect_image`,
+  `resolveSourceBytes`) идёт только через `safeFetch`: политика применяется к
+  каждому редирект-прыжку; тела ограничены `maxImageBytes`.
+- `allowedUrlHosts` — точный hostname-allowlist; непустой список полностью
+  заменяет DNS-проверку. Приватные/loopback/link-local хосты (включая
+  IPv4-mapped IPv6 `::ffff:0:0/96` и NAT64 `64:ff9b::/96`) отклоняются всегда,
+  кроме явно названных в allowlist.
+- Известные ограничения (принятые, документированные): DNS-rebinding TOCTOU
+  (валидация и transfer резолвят DNS независимо; полное закрытие требует pin
+  валидированного адреса); headless-chrome инструменты
+  (`vision_page_persist`, `vision_browser_snapshot`) проверяют URL до запуска,
+  но DNS резолвит сам chrome.
+- `apiKeyRef` в каналах — имя credential/env-переменной, значение резолвится в
+  момент вызова; в settings.yaml ключ в открытом виде больше не требуется.
+  GET /channels по-прежнему возвращает только маскированные значения.
+- Мутирующие и платные роуты (`/bench`, `/batch`, `DELETE /journal`,
+  `DELETE /cache`, `/config`, `/channels`, `/test`, `/upload-pdf`) требуют
+  same-origin (`sec-fetch-site != cross-site`). `GET /doctor` по умолчанию
+  статический; пробы каналов — только с `?probe=1`.
