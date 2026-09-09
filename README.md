@@ -145,6 +145,19 @@ dsh-vision-bridge:
 
 ---
 
+## 📝 Changed in v0.5.30
+
+Security and honesty release. Additive summary of what changed for users:
+
+* **SSRF fetch policy**: model-supplied image URLs (`describe_image` urls, `inspect_image`, and the headless-chrome tools) are now fetched only through a policy layer — non-http(s) schemes, localhost names and private/loopback/link-local hosts (incl. IPv4-mapped IPv6 and NAT64) are refused on every redirect hop; bodies are capped. New setting `allowedUrlHosts` (exact-hostname allowlist) deliberately re-allows an internal endpoint.
+* **`apiKeyRef`**: channels can reference a credential-service entry or environment variable BY NAME — plaintext API keys are no longer required in `settings.yaml`. Existing inline `apiKey` values keep working; masked-key preservation on save now matches channels by identity, not position.
+* **Route guards**: `POST /bench`, `POST /batch`, `DELETE /journal`, `DELETE /cache` now require same-origin like the other mutating routes. `GET /doctor` is static by default; channel probes run only with `?probe=1` (same-origin required).
+* **Settings honesty**: `maskPII`, `stripEXIF`, `auditLog` and `consensusEnabled` are now wired end-to-end. The previously decorative `blurFaces`, `nsfwFilter`, `tileLargeImages`/`tileThreshold` toggles and the no-op Local/Cloud/LM Studio presets were removed. Changed in v0.5.30: if you relied on them, note they never had an effect.
+* **English source language**: all user-facing strings are English; the bundled Russian dictionary was removed — the translation plugin supplies Russian at runtime.
+* **Core split**: the pure kernel (config schema + helpers) moved to `lib/vision-core.js`; `lib/index.js` re-exports it — no API changes. `describe_image` lost a v0.5.13 regression that returned an empty description; `vision_annotate` works again; pHash caching no longer mixes up similar images.
+
+---
+
 ## 📄 License
 
 MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)
