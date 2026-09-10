@@ -7,6 +7,8 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { setupWithAttachment, fakeRes, fakeReq } from './harness.js'
+import * as nodeFs from 'node:fs'
+import { sep as nodeSep } from 'node:path'
 
 describe('tools smoke — apply() registers a healthy tool surface (#205)', async () => {
   const { ctx } = await setupWithAttachment()
@@ -176,3 +178,32 @@ describe('harness sanity — apply() effects and listeners behave like productio
     assert.ok(redispatch.messages[0].content[0].text.includes('[The user attached an image'))
   })
 })
+describe('#206 regression: domain files are self-sufficient modules', () => {
+  const { readFileSync } = nodeFs;
+  const FILES = ['core', 'grounding', 'ocr', 'document', 'analysis', 'media'];
+  const NEEDS = {
+    'node:fs': ['readFileSync', 'writeFileSync', 'existsSync', 'unlinkSync', 'readdirSync'],
+    'node:os': ['tmpdir'],
+    'node:path': ['join'],
+  };
+
+  it('every node builtin used by a domain file is imported by that file', () => {
+    for (const dom of FILES) {
+      const src = readFileSync(new URL('../lib/tools/' + dom + '.js', import.meta.url), 'utf8');
+      for (const [mod, names] of Object.entries(NEEDS)) {
+        const used = names.filter((n) => new RegExp('(?<![\\w$.])' + n + '(?![\\w$])').test(src));
+        if (used.length === 0) continue;
+        assert.ok(src.includes(mod), dom + '.js uses ' + used.join(',') + ' but does not import ' + mod);
+      }
+    }
+  });
+
+  it('gated tools respect their settings in both states', async () => {
+    const off = await setupWithAttachment({ config: { selfCheckEnabled: false, consensusEnabled: false } });
+    assert.equal(off.ctx.toolDefs.has('vision_self_check'), false);
+    assert.equal(off.ctx.toolDefs.has('vision_consensus'), false);
+    const on = await setupWithAttachment({ config: { selfCheckEnabled: true, consensusEnabled: true } });
+    assert.equal(on.ctx.toolDefs.has('vision_self_check'), true);
+    assert.equal(on.ctx.toolDefs.has('vision_consensus'), true);
+  });
+});
