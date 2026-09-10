@@ -508,8 +508,9 @@ describe('group 9 ui and tools', async () => {
 describe('group 11 document and visual intelligence', async () => {
   it('checks tools registration in index.js', async () => {
     const fsMod = await import('node:fs');
-    const indexPath = path.join(repoRoot, 'lib/index.js');
-    const indexCode = fsMod.readFileSync(indexPath, 'utf8');
+    // #206: tools live in lib/tools/* — assert against host + all domain files.
+    const srcFiles = ['lib/index.js', 'lib/tools/core.js', 'lib/tools/grounding.js', 'lib/tools/ocr.js', 'lib/tools/document.js', 'lib/tools/analysis.js', 'lib/tools/media.js'];
+    const indexCode = srcFiles.map((f) => fsMod.readFileSync(path.join(repoRoot, f), 'utf8')).join('\n');
     assert.ok(indexCode.includes('vision_extract_formula'), 'vision_extract_formula registered');
     assert.ok(indexCode.includes('vision_extract_table'), 'vision_extract_table registered');
     assert.ok(indexCode.includes('vision_scan_barcode'), 'vision_scan_barcode registered');
@@ -582,8 +583,9 @@ describe('group 11 document and visual intelligence', async () => {
 describe('group 12 ui flow consensus memory and native tokens', async () => {
   it('checks tools registration in index.js', async () => {
     const fsMod = await import('node:fs');
-    const indexPath = path.join(repoRoot, 'lib/index.js');
-    const indexCode = fsMod.readFileSync(indexPath, 'utf8');
+    // #206: tools live in lib/tools/* — assert against host + all domain files.
+    const srcFiles = ['lib/index.js', 'lib/tools/core.js', 'lib/tools/grounding.js', 'lib/tools/ocr.js', 'lib/tools/document.js', 'lib/tools/analysis.js', 'lib/tools/media.js'];
+    const indexCode = srcFiles.map((f) => fsMod.readFileSync(path.join(repoRoot, f), 'utf8')).join('\n');
     assert.ok(indexCode.includes('vision_ui_flow'), 'vision_ui_flow registered');
     assert.ok(indexCode.includes('vision_consensus'), 'vision_consensus registered');
     assert.ok(indexCode.includes('vision_memory_search'), 'vision_memory_search registered');
@@ -652,8 +654,9 @@ describe('group 12 ui flow consensus memory and native tokens', async () => {
 describe('group 13 cross-plugin synergy', async () => {
   it('checks synergy tools registration in index.js', async () => {
     const fsMod = await import('node:fs');
-    const indexPath = path.join(repoRoot, 'lib/index.js');
-    const indexCode = fsMod.readFileSync(indexPath, 'utf8');
+    // #206: tools live in lib/tools/* — assert against host + all domain files.
+    const srcFiles = ['lib/index.js', 'lib/tools/core.js', 'lib/tools/grounding.js', 'lib/tools/ocr.js', 'lib/tools/document.js', 'lib/tools/analysis.js', 'lib/tools/media.js'];
+    const indexCode = srcFiles.map((f) => fsMod.readFileSync(path.join(repoRoot, f), 'utf8')).join('\n');
     assert.ok(indexCode.includes('vision_verify_generated_image'), 'vision_verify_generated_image registered');
     assert.ok(indexCode.includes('indexVisualMemory'), 'indexVisualMemory helper registered');
   });

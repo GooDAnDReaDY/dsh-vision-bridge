@@ -112,7 +112,7 @@ describe('eval — vision_ocr_local gracefully falls back when tesseract absent'
   it('tool reports engine missing rather than throwing a network error', async () => {
     // We can't invoke the tool directly (needs ctx), but assert the guard is
     // present in the host source.
-    const src = readFileSync(path.join(repoRoot, 'lib/index.js'), 'utf8');
+    const src = readFileSync(path.join(repoRoot, 'lib/tools/ocr.js'), 'utf8');
     assert.match(src, /tesseract not installed/);
     assert.match(src, /vision_ocr_local/);
   });
