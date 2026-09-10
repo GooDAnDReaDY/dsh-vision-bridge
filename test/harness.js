@@ -169,6 +169,10 @@ export function fakeReq({ method = 'GET', headers = {}, body = '', url = '/dsh-v
     method,
     headers,
     url,
+    // async-iterable body for handlers that read `for await (const c of req)`
+    async *[Symbol.asyncIterator]() {
+      if (body) yield Buffer.from(body)
+    },
     on(event, cb) {
       if (event === 'data' && body) cb(body)
       if (event === 'end') cb()
