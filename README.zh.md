@@ -123,6 +123,15 @@ dsh-vision-bridge:
 * **设置诚实性**：`maskPII`、`stripEXIF`、`auditLog`、`consensusEnabled` 已端到端生效。此前仅具装饰性的 `blurFaces`、`nsfwFilter`、`tileLargeImages`/`tileThreshold` 开关和无效的 Local/Cloud/LM Studio 预设已被移除。Changed in v0.5.30：如果您曾依赖它们，请注意它们从未产生过效果。
 * **英语为源语言**：所有用户可见字符串均为英语；捆绑的俄语字典已移除——运行时的俄语由翻译插件提供。
 * **核心拆分**：纯内核（配置模式 + 辅助函数）移至 `lib/vision-core.js`；`lib/index.js` 对其进行重新导出——API 无变化。修复了 v0.5.13 中 `describe_image` 返回空描述的回归；`vision_annotate` 恢复工作；pHash 缓存不再混淆相似图片。
+---
+
+## 📝 v0.5.31 中的变更
+
+维护版本——用户行为无变化。
+
+* **内部结构**：工具注册已迁移到 `lib/tools/*` 领域模块（core / grounding / ocr / document / analysis / media）；`lib/index.js` 像以前一样重新导出所有内容。文件更小，宿主与工具领域之间的依赖显式化。
+* **设置卡片加固**：容错的 locale 注册、移除冗余的侧边栏回退、通过安全的 `ctx.get` 包装访问插件服务、`/config` 接受扩展字段集（`cacheMaxEntries`、`channelFallback`）。
+
 
 ## 📄 开源许可
 
