@@ -167,6 +167,16 @@ Maintenance release — no user-facing behavior changes.
 
 ---
 
+## 📝 Changed in v0.5.32
+
+Stability and architecture release.
+
+* **Internal structure**: all ~44 tool registrations moved to `lib/tools/*` domain modules (core / grounding / ocr / document / analysis / media) with explicit dependencies; `lib/index.js` keeps the host wiring only.
+* **Stability fixes**: finished batch records are released after a 10-minute poll window (memory growth fixed); `/upload-pdf` rejects payloads above the new `maxPdfBytes` setting (20 MiB default) instead of buffering arbitrary bodies; `vision_memory_search` scores each attachment against its own description (previously all attachments matched identically); dead host code removed; journal labels are consistent between the legacy and channels paths.
+* **Settings**: new `maxPdfBytes` setting (upload hard cap).
+
+---
+
 ## 📄 License
 
 MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)

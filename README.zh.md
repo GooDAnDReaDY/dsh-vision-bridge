@@ -132,6 +132,16 @@ dsh-vision-bridge:
 * **内部结构**：工具注册已迁移到 `lib/tools/*` 领域模块（core / grounding / ocr / document / analysis / media）；`lib/index.js` 像以前一样重新导出所有内容。文件更小，宿主与工具领域之间的依赖显式化。
 * **设置卡片加固**：容错的 locale 注册、移除冗余的侧边栏回退、通过安全的 `ctx.get` 包装访问插件服务、`/config` 接受扩展字段集（`cacheMaxEntries`、`channelFallback`）。
 
+---
+
+## 📝 v0.5.32 中的变更
+
+稳定性与架构版本。
+
+* **内部结构**：全部约 44 个工具注册迁移到 `lib/tools/*` 领域模块（core / grounding / ocr / document / analysis / media），依赖显式传递；`lib/index.js` 仍为主机入口。
+* **稳定性修复**：完成的批处理记录在 10 分钟轮询窗口后释放（修复内存增长）；`/upload-pdf` 拒绝超过新设置 `maxPdfBytes`（默认 20 MiB）的负载；`vision_memory_search` 按每个附件自身的描述评分；移除宿主死代码；日志标签一致化。
+* **设置**：新增 `maxPdfBytes`（上传硬上限）。
+
 
 ## 📄 开源许可
 
