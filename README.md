@@ -158,6 +158,15 @@ Security and honesty release. Additive summary of what changed for users:
 
 ---
 
+## 📝 Changed in v0.5.31
+
+Maintenance release — no user-facing behavior changes.
+
+* **Internal structure**: tool registrations moved to `lib/tools/*` domain modules (core / grounding / ocr / document / analysis / media); `lib/index.js` re-exports everything as before. Smaller files, explicit dependencies between the host and the tool domains.
+* **Settings card hardening**: locale registration is fault-tolerant, the redundant sidebar fallback was removed, plugin service access goes through a safe `ctx.get` wrapper, and `/config` accepts the expanded field set (`cacheMaxEntries`, `channelFallback`).
+
+---
+
 ## 📄 License
 
 MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)
