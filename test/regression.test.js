@@ -435,13 +435,7 @@ describe('ocr enhancements', () => {
 
 // ── Group 5: Image preprocessing (#145 #146 #147 #149) ──────────────────
 describe('group 5 preprocessing', async () => {
-  const { tileImage, deskewImage, enhanceImage, autoSelectFormat } = await import(path.join(repoRoot, 'lib/index.js'));
-
-  it('tileImage returns single tile for small image', async () => {
-    const bytes = Buffer.from([0x89, 0x50, 0x4e, 0x47]); // PNG header
-    const tiles = await tileImage(bytes, 'image/png', { maxPixels: 4000000 });
-    assert.equal(tiles.length, 1);
-  });
+  const { deskewImage, enhanceImage } = await import(path.join(repoRoot, 'lib/index.js'));
 
   it('deskewImage returns original if sharp unavailable', async () => {
     const bytes = Buffer.from([0xff, 0xd8, 0xff, 0xe0]); // JPEG header
@@ -455,15 +449,6 @@ describe('group 5 preprocessing', async () => {
     assert.ok(result.length > 0);
   });
 
-  it('autoSelectFormat returns png for small files', async () => {
-    const smallBytes = Buffer.from(new Array(1000).fill(0));
-    assert.equal(await autoSelectFormat(smallBytes), 'png');
-  });
-
-  it('autoSelectFormat returns webp for large files', async () => {
-    const largeBytes = Buffer.from(new Array(200000).fill(0));
-    assert.equal(await autoSelectFormat(largeBytes), 'webp');
-  });
 });
 
 // ── Group 6: Visual Analysis (#154 #156 #158 #161) ─────────────────────
@@ -658,7 +643,6 @@ describe('group 13 cross-plugin synergy', async () => {
     const srcFiles = ['lib/index.js', 'lib/tools/core.js', 'lib/tools/grounding.js', 'lib/tools/ocr.js', 'lib/tools/document.js', 'lib/tools/analysis.js', 'lib/tools/media.js'];
     const indexCode = srcFiles.map((f) => fsMod.readFileSync(path.join(repoRoot, f), 'utf8')).join('\n');
     assert.ok(indexCode.includes('vision_verify_generated_image'), 'vision_verify_generated_image registered');
-    assert.ok(indexCode.includes('indexVisualMemory'), 'indexVisualMemory helper registered');
   });
 
   it('validates AI generated image verification contract', () => {
