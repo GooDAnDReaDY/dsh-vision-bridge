@@ -60,3 +60,4 @@
 - registerSlotWhenReady: retry-регистрация settings.plugin.item и conversation.input.right (до 20 попыток, 500мс).
 - Тосты PDF: цвета из state-токенов (успех/ошибка) вместо хардкода.
 - Визуальная приёмка: следующий release-цикл на MiniPC (карточка: collapsed/expanded/loading/error-boundary; композер: переключение режимов, PDF-тосты).
+- Семантика бейджей: канал «ok» = circuit не open И (есть ключ ИЛИ тип без ключа — ollama/dsh-catalog); «warn» = нет ключа у типа с ключом; «bad» = circuit open. Карточный агрегат (ch ok/total) использует ту же логику.
