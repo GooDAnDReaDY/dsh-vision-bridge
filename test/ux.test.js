@@ -120,6 +120,11 @@ describe('#210 source language: no hardcoded Russian user-facing strings', () =>
     assert.ok(src.includes("'Describe this image.'"))
   })
 
+  it('client never passes a ready element into jsx() as its type (#226 review)', () => {
+    const src = indexSrc() + clientSrc()
+    assert.doesNotMatch(src, /jsx\s*\(\s*\(\(\)\s*=>/)
+  })
+
   it('client has no bundled ru dictionary and no Russian toasts', () => {
     const src = clientSrc()
     assert.equal(src.includes('Конвертация'), false)

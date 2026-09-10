@@ -51,3 +51,13 @@
   `DELETE /cache`, `/config`, `/channels`, `/test`, `/upload-pdf`) требуют
   same-origin (`sec-fetch-site != cross-site`). `GET /doctor` по умолчанию
   статический; пробы каналов — только с `?probe=1`.
+
+### 6. Единый стиль UI (#226, эталон dsh-clinebot)
+- Карточка: секция border-l2 / bg-layer-3 / radius 12px, padding 18px 20px, gap 14px; заголовок 16px/600; описание 13px вторичным цветом; тело отделено бордером.
+- Статус-бейджи (.vbr-badge-ok/warn/bad/neutral, 12px pill + полупрозрачный фон состояния): здоровье каналов в шапке карточки (ch ok/total) и статус каждой строки канала (key/circuit).
+- Инпуты и селекты: 36px, bg-layer-2, focus ring state-brand-primary; кнопки 36px с focus-visible.
+- ErrorBoundary (createErrorBoundary) оборачивает карточку настроек и композер-контролы: деградация рендера показывает alert с сообщением и Retry, не роняя страницу.
+- registerSlotWhenReady: retry-регистрация settings.plugin.item и conversation.input.right (до 20 попыток, 500мс).
+- Тосты PDF: цвета из state-токенов (успех/ошибка) вместо хардкода.
+- Визуальная приёмка: следующий release-цикл на MiniPC (карточка: collapsed/expanded/loading/error-boundary; композер: переключение режимов, PDF-тосты).
+- Семантика бейджей: канал «ok» = circuit не open И (есть ключ ИЛИ тип без ключа — ollama/dsh-catalog); «warn» = нет ключа у типа с ключом; «bad» = circuit open. Карточный агрегат (ch ok/total) использует ту же логику.
