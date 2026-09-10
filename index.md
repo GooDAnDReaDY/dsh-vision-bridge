@@ -24,6 +24,7 @@ vision-инструментов.
 
 - `lib/index.js` — хост: apply(), инструменты, каналы, роуты, слушатели
 - `lib/vision-core.js` — чистое ядро: Config и module-level хелперы (#206)
+- `lib/tools/` — доменные файлы инструментов: core (describe/read/inspect), grounding, ocr, document, analysis, media (#206)
 - `lib/channels.js` — мультиканальный драйвер (6 типов), ротация ключей, Retry-After
 - `lib/client.js` — браузерная карточка настроек
 - `lib/cache.js` — LRU-кэш + составной ключ
