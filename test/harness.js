@@ -77,8 +77,8 @@ export function createMockCtx(options = {}) {
   // (defaults from the base config included).
   const settingsScope = {
     get: () => config,
-    update: async () => {},
-    unset: async () => {},
+    update: async (patch) => { Object.assign(config, patch) },
+    unset: async (key) => { delete config[key] },
   }
 
   const ctx = {
@@ -108,7 +108,7 @@ export function createMockCtx(options = {}) {
         ref: { mediaType: 'image/png' },
       }),
     },
-    get: () => undefined,
+    get: (name) => ctx[name],
     on: (event, fn) => {
       if (!listeners.has(event)) listeners.set(event, [])
       listeners.get(event).push(fn)

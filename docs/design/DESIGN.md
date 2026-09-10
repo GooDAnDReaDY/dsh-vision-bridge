@@ -10,7 +10,7 @@
   - Глобальный Drag-and-Drop: перетаскивание PDF-файлов в окно чата с авто-нарезкой страниц и превью.
   - Полноэкранный Lightbox для просмотра изображений в чате по клику.
 - **Настройки (Settings)**:
-  - Карточка плагина в слоте `settings.plugin.item` (с фоллбэком на `settings.section`).
+  - Карточка плагина в слоте `settings.plugin.item` (пространство `dsh-vision-bridge`, без верхнеуровневого `settings.section`).
   - Привязка к `ctx.settingsScope` (`namespace: 'dsh-vision-bridge'`).
 - **Инструменты агента (Tools)**:
   - 30+ инструментов (`describe_image`, `vision_ocr`, `vision_extract_formula`, `vision_extract_table`, `vision_scan_barcode`, `vision_ui_flow` и др.).

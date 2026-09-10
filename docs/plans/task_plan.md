@@ -1,25 +1,15 @@
-# Task Plan: Refactor Stability & Async (#195)
+# Task Plan — Issue #222: Settings Card & Client Audit
 
-## Phase 1: Async Non-blocking Execution
-- [ ] Create async runner utility `runProcess(bin, args, options)` using non-blocking `execFile`/`spawn` with promise, timeout, and signal.
-- [ ] Replace `spawnSync('pdftoppm', ...)` in `/upload-pdf` and `vision_pdf_pages` with async runner.
-- [ ] Replace `spawnSync('tesseract', ...)` in `vision_ocr_local` and OCR fallback with async runner.
-- [ ] Replace `spawnSync('ffmpeg', ...)` in `vision_video_describe` with async runner.
-- [ ] Replace `spawnSync(chrome, ...)` in `vision_html_screenshot` / `vision_page_persist` with async runner.
+## 1. Objectives
+- Fix unsafe dictionary registration (`ctx.locale.register`) in `lib/client.js` with `try / catch` to ensure client half never crashes on reload/double apply.
+- Remove redundant `settings.section` fallback from `lib/client.js` and keep only `settings.plugin.item`.
+- Safely access DSH services via `ctx.get('...')` instead of raw property access on context proxies (`ctx.settings`, `ctx.llm`, `ctx.locale`, `ctx.slots`).
+- Audit and document settings card fields vs Config schema (45 fields), ensuring critical settings are configurable and non-UI parameters are documented.
+- Add comprehensive regression tests in `test/ux.test.js` or `test/regression.test.js`.
 
-## Phase 2: Tool Registry Deduplication & Cleanup
-- [ ] Collapse `vision_math_extract` into `vision_extract_formula` (keep backwards compatibility).
-- [ ] Collapse `vision_qr_read` into `vision_scan_barcode`.
-- [ ] Collapse `vision_describe_structured` into `vision_extract_structured`.
-- [ ] Collapse `vision_diff` / `vision_pixel_diff` into `vision_compare`.
-- [ ] Remove dead stubs `vision_browser_click` and `vision_browser_navigate` (clean up prompt bloat).
-- [ ] Ensure all aliases and unified tools have clean schemas and descriptions.
-
-## Phase 3: Modular Code Organization
-- [ ] Create `lib/process.js` for async binary executions (Tesseract, pdftoppm, ffmpeg, chrome).
-- [ ] Keep `lib/index.js` clean and maintainable.
-
-## Phase 4: Testing & Verification
-- [ ] Run full regression test suite (`npm test`).
-- [ ] Verify non-blocking async execution in automated tests.
-- [ ] Verify tool contracts and deduplicated tools.
+## 2. Phases
+- [ ] Phase 1: Research & Audit (`lib/client.js`, `lib/index.js`, `lib/vision-core.js`).
+- [ ] Phase 2: Implementation of client fixes (`lib/client.js` safe locale, no `settings.section`, safe `ctx.get`).
+- [ ] Phase 3: Backend & Schema audit (`lib/index.js` `/config` endpoint synchronization, safe service access).
+- [ ] Phase 4: Test Suite & Verification (`test/ux.test.js`, `npm test`).
+- [ ] Phase 5: Gitea PR, merge to main, worktree cleanup, and release gate.

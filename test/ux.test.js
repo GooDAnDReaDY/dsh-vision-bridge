@@ -127,3 +127,43 @@ describe('#210 source language: no hardcoded Russian user-facing strings', () =>
     assert.match(src, /ctx\.locale\.register\(NS, \{ en \}\)/)
   })
 })
+
+describe('#222 settings card audit & safe lifecycle', () => {
+  it('client.js wraps dictionary registration safely and avoids settings.section', () => {
+    const src = clientSrc()
+    // Safe locale registration with try/catch
+    assert.match(src, /try\s*\{[\s\S]*locale.*register[\s\S]*\}\s*catch/)
+    // settings.section must not be registered
+    assert.equal(src.includes("'settings.section'"), false, 'settings.section slot must be removed')
+    assert.ok(src.includes("'settings.plugin.item'"), 'settings.plugin.item card slot must be present')
+  })
+
+  it('client.js uses safe service access (ctx.get)', () => {
+    const src = clientSrc()
+    assert.ok(src.includes("ctx.get ? ctx.get('locale') : ctx.locale"), 'safe locale access')
+    assert.ok(src.includes("ctx.get ? ctx.get('slots') : ctx.slots"), 'safe slots access')
+  })
+
+  it('POST /config supports expanded extraFields (cacheMaxEntries, channelFallback)', async () => {
+    const { ctx } = await setupWithAttachment()
+    const handler = ctx.routes.get('/dsh-vision-bridge/config').handler
+    const res = fakeRes()
+    await handler(
+      fakeReq({
+        method: 'POST',
+        headers: { 'sec-fetch-site': 'same-origin' },
+        body: JSON.stringify({
+          cacheMaxEntries: 512,
+          channelFallback: 'parallel-race',
+          nativePassthrough: 'never'
+        })
+      }),
+      res
+    )
+    assert.equal(res.status, 200)
+    const data = JSON.parse(res.body)
+    assert.equal(data.cacheMaxEntries, 512)
+    assert.equal(data.channelFallback, 'parallel-race')
+    assert.equal(data.nativePassthrough, 'never')
+  })
+})
