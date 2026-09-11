@@ -2,14 +2,16 @@
 # #252: push is limited to main. With a PR open, a branch push started a second
 # run of the same commit, and two concurrent runs race for the runner's shared
 # act action cache (/root/.cache/act), leaving one red before any test runs.
-# The workflow-wide concurrency group serializes runs for the same reason.
+# #263: the group is per ref. A workflow-wide group made Gitea cancel the pending
+# run of one pull request when another pull request queued, which reported a red
+# status for a commit whose tests never ran.
 name: test
 on:
   push:
     branches: [main]
   pull_request:
 concurrency:
-  group: dsh-vision-bridge-ci
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 jobs:
   test:
