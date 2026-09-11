@@ -12,7 +12,7 @@ vision-инструментов.
 
 - Версия: источник истины — `package.json` (npm `@goodandready/dsh-vision-bridge`); релизы — по явному «ок» владельца
 - Текущий релиз: **0.5.33** (attach-домен для нативных vision-моделей, выдача инструментов по модели, настройки `attachMaxItems`/`hideRedundantTools` в карточке, `DELETE /batch/:id`, исправления стабильности); проверен на тест-контуре MiniPC и на production
-- Тесты: `npm test` — 241/241 (82 suites, 0 fail, ~3.5 с); CI — один прогон на коммит, poppler+ffmpeg в образе
+- Тесты: `npm test` — 241/241 (82 suites, 0 fail, ~3.5 с); CI — один прогон на коммит, шаг установки доставляет poppler-utils и ffmpeg
 - Milestone: эпик #241 (направления B/C/D — после 0.5.33)
 - Runtime: профиль `web` на `192.168.1.111`, `dsh-web`, порт `3080`
 
