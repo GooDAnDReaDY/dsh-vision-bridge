@@ -207,7 +207,7 @@ describe('#222 settings card audit & safe lifecycle', () => {
     assert.equal(saved.attachMaxItems, 4)
     assert.equal(saved.hideRedundantTools, false)
 
-    for (const bad of [0, 33, 'many']) {
+    for (const bad of [0, 33, 4.5, 'many']) {
       const res = fakeRes()
       await handler(fakeReq({
         method: 'POST',
@@ -215,7 +215,7 @@ describe('#222 settings card audit & safe lifecycle', () => {
         body: JSON.stringify({ attachMaxItems: bad }),
       }), res)
       assert.equal(res.status, 400, `attachMaxItems=${bad} must be rejected`)
-      assert.match(JSON.parse(res.body).error, /attachMaxItems must be a number between 1 and 32/)
+      assert.match(JSON.parse(res.body).error, /attachMaxItems must be a whole number between 1 and 32/)
       // #269 review: a rejected value must not have been persisted by the route
       const after = fakeRes()
       await handler(fakeReq({ method: 'GET' }), after)
@@ -235,11 +235,12 @@ describe('#222 settings card audit & safe lifecycle', () => {
   it('#269 review the card refuses an out-of-range cap before writing anything', () => {
     const src = clientSrc()
     // the guard must live in save() ahead of the settings snapshot write
-    const guard = src.indexOf('attachMaxItemsRange')
-    assert.ok(guard > 0, 'range message missing')
+    // anchor on the guard usage, not the dictionary key (which also contains the name)
+    const guard = src.indexOf("t('attachMaxItemsRange')")
+    assert.ok(guard > 0, 'range guard missing')
     const snapshotWrite = src.indexOf('scope.update({')
     assert.ok(guard < snapshotWrite, 'the guard must run before scope.update')
     assert.match(src, /const cap = Number\(attachMaxItems\)/)
-    assert.match(src, /if \(!Number\.isFinite\(cap\) \|\| cap < 1 \|\| cap > 32\)/)
+    assert.match(src, /if \(!Number\.isInteger\(cap\) \|\| cap < 1 \|\| cap > 32\)/)
   })
 })
