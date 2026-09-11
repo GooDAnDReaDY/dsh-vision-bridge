@@ -157,6 +157,14 @@ describe('#257 publish() failure branches', async () => {
       /URL refused by fetch policy/,
     )
   })
+
+  it('refuses an explicit path outside allowedImageDirs', async () => {
+    const { ctx } = await setupWithAttachment({ config: { allowedImageDirs: [dir] }, fs: fsStub() })
+    await assert.rejects(
+      () => imagesTool(ctx).execute({ paths: [join(tmpdir(), 'outside.png')] }, undefined),
+      /outside the allowedImageDirs/,
+    )
+  })
 })
 
 describe('#257 resolvedPathOf fallback', async () => {
@@ -219,6 +227,18 @@ describe('#257 URL sources through the injected fetch seam', async () => {
     )
     assert.equal(out.items.length, 1)
     assert.match(out.note, /Skipped 1: broken\.png/)
+  })
+
+  it('re-throws a fetch-policy refusal arriving from a redirect hop', async () => {
+    // safeFetch re-checks the policy on every hop; that error carries a code so
+    // the tool cannot mistake it for a read failure and quietly skip the source.
+    const defs = registerWith(async () => {
+      throw Object.assign(new Error('URL refused by fetch policy (#202): http://127.0.0.1/x.png'), { code: 'EFETCH_POLICY' })
+    })
+    await assert.rejects(
+      () => defs.get('vision_attach_images').execute({ urls: ['https://example.com/redirect.png'] }, undefined),
+      /URL refused by fetch policy/,
+    )
   })
 })
 
