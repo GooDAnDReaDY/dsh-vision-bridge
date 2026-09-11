@@ -6,7 +6,7 @@
 
 <p align="center">
   <a href="https://www.npmjs.com/package/@goodandready/dsh-vision-bridge"><img src="https://img.shields.io/npm/v/@goodandready/dsh-vision-bridge.svg?style=for-the-badge&color=6366f1&labelColor=1e1b4b" alt="npm version"></a>
-  <a href="LICENSE"><img src="https://img.shields.io/github/license/GooDAnDReaDY/<имя-плагина>.svg?style=for-the-badge&color=10b981&labelColor=064e3b" alt="license"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/GooDAnDReaDY/dsh-vision-bridge.svg?style=for-the-badge&color=10b981&labelColor=064e3b" alt="license"></a>
   <a href="https://github.com/topics/dsh-plugin"><img src="https://img.shields.io/badge/DSH-Plugin-8b5cf6.svg?style=for-the-badge&labelColor=2e1065" alt="DSH Plugin"></a>
   <a href="https://nodejs.org"><img src="https://img.shields.io/badge/Node-20%2B-f59e0b.svg?style=for-the-badge&labelColor=451a03" alt="Node version"></a>
 </p>
@@ -167,6 +167,19 @@ dsh-vision-bridge:
 * **Фиксы стабильности**: завершённые батчи освобождаются через 10 минут (устранён рост памяти); `/upload-pdf` отклоняет payload выше новой настройки `maxPdfBytes` (20 МиБ по умолчанию) вместо буферизации произвольных тел; `vision_memory_search` ищет по собственному описанию каждого аттачмента (раньше все совпадали одинаково); мёртвый код хоста удалён; метки журнала согласованы между путями.
 * **Настройки**: новая `maxPdfBytes` (жёсткий лимит загрузки PDF).
 
+
+## 📝 Изменения в v0.5.33
+
+Релиз в сторону нативного зрения: мост теперь работает не только с текстовыми моделями, но и с теми, кто видит изображения сам.
+
+* **Attach-домен (`vision_attach_pages`, `vision_attach_frames`, `vision_attach_images`)**: страницы PDF, выбранные кадры видео и изображения из файлов, каталогов и по URL публикуются **вложениями в диалог**, поэтому модель с нативным зрением смотрит пиксели сама, а не платит за второй vision-вызов. Каждое изображение сжимается по настройкам `imageMaxWidth`/`imageMaxHeight`/`imageQuality` и ограничено `maxImageBytes`; для URL действует та же SSRF-политика, для локальных путей — `allowedImageDirs`.
+* **Выдача инструментов по модели**: на маршруте, где чат-модель и так принимает изображения, компенсационные инструменты моста скрываются от агента (они ему не нужны) и остаются только дополнительные; на текстовом маршруте вместо них скрываются attach-инструменты, потому что такая модель вложения не увидит. Поведением управляет новая настройка `hideRedundantTools` (включена по умолчанию).
+* **Новые настройки в карточке**: группа **Attachments** показывает `attachMaxItems` (целое 1–32, по умолчанию 8 — сколько изображений публикует один вызов) и `hideRedundantTools`. Оба поля проверяются при сохранении, значение вне диапазона отклоняется с понятным сообщением. Размеры изображений теперь записываются и в живой снимок настроек, а не только в роут.
+* **Batch API**: `DELETE /batch/:id` освобождает завершённый batch сразу, под той же same-origin защитой, что start/cancel. Таймер TTL записи batch больше не удерживает короткоживущий процесс — набор тестов сократился с 10 минут до ~3,5 секунд.
+* **Исправления**: один нечитаемый источник больше не обрывает `vision_attach_images` — он попадает в `Skipped N: <имя>: <причина>`, а читаемые источники прикрепляются; отказ fetch-политики остаётся жёсткой ошибкой. Текстовый слой PDF теперь действительно появляется (`pdftotext` не определялся, и слой молча не отдавался). Обрезка диапазона страниц или числа кадров лимитом отражается в `truncated` и в примечании.
+* **Внутреннее**: CI ставит poppler без `sudo`, идёт один прогон на коммит, сериализация по ref и установка ffmpeg для кадровых тестов; в репозитории появился шаблон PR и игнор `.worktrees/`.
+
+---
 
 ## 📄 Лицензия
 

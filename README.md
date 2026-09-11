@@ -181,6 +181,19 @@ Stability and architecture release.
 
 ---
 
+## 📝 Changed in v0.5.33
+
+Vision-first release: the bridge now serves chat models that see images natively, not only text-only ones.
+
+* **Attach domain (`vision_attach_pages`, `vision_attach_frames`, `vision_attach_images`)**: PDF pages, sampled video frames and local/directory/URL images are published as **conversation attachments**, so a native-vision chat model looks at the pixels itself instead of paying for a second vision call. Every image is compressed by the existing `imageMaxWidth`/`imageMaxHeight`/`imageQuality` settings and bounded by `maxImageBytes`; URL sources go through the same SSRF policy as the rest, and local paths are restricted by `allowedImageDirs`.
+* **Model-aware tool exposure**: on a route whose chat model already accepts images, the compensation tools of the bridge are hidden from that agent (the model does not need them) and only the extra instruments remain; on a text-only route the attach tools are hidden instead, because that model cannot see an attachment. The behaviour is controlled by the new `hideRedundantTools` setting (on by default).
+* **New settings in the plugin card**: an **Attachments** group exposes `attachMaxItems` (whole number 1–32, default 8 — how many images one attach call publishes) and `hideRedundantTools`. Both are validated on save; a value outside the range is rejected with a clear message. The image dimension fields are now also written to the live settings snapshot, not only to the route.
+* **Batch API**: `DELETE /batch/:id` releases a finished batch immediately, under the same same-origin guard as start/cancel. The batch record's TTL timer no longer keeps a short-lived process alive, which cut the test suite from 10 minutes to ~3.5 seconds.
+* **Fixes**: one unreadable source no longer aborts `vision_attach_images` — it is reported as `Skipped N: <name>: <reason>` while the readable sources still attach, and a fetch-policy refusal stays a hard error; the PDF text layer actually appears now (`pdftotext` was never detected, so the layer silently never shipped); a page range or frame count cut by the cap is reported through `truncated` and the note.
+* **Internal**: CI installs poppler without `sudo`, runs once per commit, serializes per ref and installs ffmpeg for the frame tests; the repository gained the pull-request template and ignores `.worktrees/`.
+
+---
+
 ## 📄 License
 
 MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)
