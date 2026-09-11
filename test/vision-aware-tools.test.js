@@ -32,11 +32,13 @@ describe('#242 vision-route hides compensation tools', async () => {
     assert.equal(deny.includes('vision_memory_search'), false, 'extras stay available')
   })
 
-  it('does not restrict a text-only route', async () => {
+  it('a text-only route hides the attach tools instead of the compensation set', async () => {
     const { ctx } = await setupWithAttachment({ config: {}, modelInfo: TEXT_INFO })
     const { agent, restricted } = fakeAgent({ provider: 'p', model: 'text-model' })
     await runPreStep(ctx, agent)
-    assert.equal(restricted.length, 0)
+    assert.equal(restricted.length, 1)
+    assert.ok(restricted[0].deny.includes('vision_attach_images'))
+    assert.equal(restricted[0].deny.includes('describe_image'), false)
   })
 
   it('applies the restriction once per unchanged route', async () => {
@@ -48,7 +50,7 @@ describe('#242 vision-route hides compensation tools', async () => {
     assert.equal(restricted.length, 1, 'the route is cached per agent')
   })
 
-  it('lifts the mask when the route switches to a text-only model', async () => {
+  it('swaps the mask when the route switches to a text-only model', async () => {
     const { ctx } = await setupWithAttachment({ config: {}, modelInfo: VISION_INFO })
     const { agent, restricted, lifted } = fakeAgent({ provider: 'p', model: 'vision-model' })
     await runPreStep(ctx, agent)
@@ -56,8 +58,9 @@ describe('#242 vision-route hides compensation tools', async () => {
     agent.session.requestHeader = () => ({ config: { provider: 'p', model: 'text-model' } })
     ctx.llm.resolveModelInfo = async (provider, model) => (model === 'text-model' ? TEXT_INFO : VISION_INFO)
     await runPreStep(ctx, agent)
-    assert.equal(restricted.length, 1)
+    assert.equal(restricted.length, 2, 'the new route gets its own mask')
     assert.equal(lifted.length, 1, 'the previous mask must be lifted on route change')
+    assert.ok(restricted[1].deny.includes('vision_attach_pages'))
   })
 
   it('is disabled by hideRedundantTools=false', async () => {
@@ -87,15 +90,18 @@ describe('#242 review follow-ups', async () => {
     for (const name of extras) assert.equal(deny.has(name), false, name + ' is an extra and must stay visible')
   })
 
-  it('a route switching from text-only to vision gets the mask', async () => {
+  it('a route switching from text-only to vision swaps the mask', async () => {
     const { ctx } = await setupWithAttachment({ config: {}, modelInfo: TEXT_INFO })
     const { agent, restricted } = fakeAgent({ provider: 'p', model: 'text-model' })
     await runPreStep(ctx, agent)
-    assert.equal(restricted.length, 0)
+    assert.equal(restricted.length, 1)
+    assert.ok(restricted[0].deny.includes('vision_attach_images'), 'text-only hides the attach tools')
     agent.session.requestHeader = () => ({ config: { provider: 'p', model: 'vision-model' } })
     ctx.llm.resolveModelInfo = async (provider, model) => (model === 'vision-model' ? VISION_INFO : TEXT_INFO)
     await runPreStep(ctx, agent)
-    assert.equal(restricted.length, 1)
+    assert.equal(restricted.length, 2, 'the vision route gets its own mask')
+    assert.ok(restricted[1].deny.includes('describe_image'))
+    assert.equal(restricted[1].deny.includes('vision_attach_images'), false)
   })
 
   it('turning hideRedundantTools off at runtime lifts the mask', async () => {
@@ -109,11 +115,13 @@ describe('#242 review follow-ups', async () => {
 })
 
 describe('#242 follow-up: forced bridging keeps the tools', async () => {
-  it("nativePassthrough='never' does not mask a vision route (bridge is forced)", async () => {
+  it("nativePassthrough='never' keeps the compensation tools (bridge is forced)", async () => {
     const { ctx } = await setupWithAttachment({ config: { nativePassthrough: 'never' }, modelInfo: VISION_INFO })
     const { agent, restricted } = fakeAgent({ provider: 'p', model: 'vision-model' })
     await runPreStep(ctx, agent)
-    assert.equal(restricted.length, 0, 'forced bridging keeps the compensation tools available')
+    const deny = restricted[0].deny
+    assert.equal(deny.includes('describe_image'), false, 'forced bridging keeps the compensation tools available')
+    assert.ok(deny.includes('vision_attach_images'), 'but attach tools are redundant while the bridge describes images')
   })
 
   it("nativePassthrough='always' masks a vision route (bridge never runs)", async () => {
@@ -129,7 +137,9 @@ describe('#242 follow-up: forced bridging keeps the tools', async () => {
     assert.equal(restricted.length, 1)
     ctx.config.nativePassthrough = 'never' // same route, bridge forced
     await runPreStep(ctx, agent)
-    assert.equal(lifted.length, 1, 'the stale mask must be lifted when bridging is forced')
-    assert.equal(restricted.length, 1, 'no new mask under forced bridging')
+    assert.equal(lifted.length, 1, 'the stale mask must be lifted when the policy changes')
+    assert.equal(restricted.length, 2, 'the forced-bridge route gets the mirrored mask')
+    assert.ok(restricted[1].deny.includes('vision_attach_images'))
+    assert.equal(restricted[1].deny.includes('describe_image'), false)
   })
 })
