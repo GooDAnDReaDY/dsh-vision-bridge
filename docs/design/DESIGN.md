@@ -61,3 +61,9 @@
 - Тосты PDF: цвета из state-токенов (успех/ошибка) вместо хардкода.
 - Визуальная приёмка: следующий release-цикл на MiniPC (карточка: collapsed/expanded/loading/error-boundary; композер: переключение режимов, PDF-тосты).
 - Семантика бейджей: канал «ok» = circuit не open И (есть ключ ИЛИ тип без ключа — ollama/dsh-catalog); «warn» = нет ключа у типа с ключом; «bad» = circuit open. Карточный агрегат (ch ok/total) использует ту же логику.
+
+### 7. Model-aware выдача инструментов (#242)
+- Если активный маршрут чата поддерживает изображения нативно — агенту скрываются **компенсационные** инструменты (те, что нужны только text-only модели): describe_image, read_image, inspect_image, vision_vqa, vision_cot, vision_self_check, vision_describe_structured, vision_ui_layout, vision_translate_image, vision_to_code, vision_audit_accessibility, vision_ui_flow, vision_math_extract, vision_extract_formula/table/structured, vision_scan_barcode, vision_qr_read, vision_trace, vision_colors, vision_quality_check, vision_diff, vision_pixel_diff, vision_ground, vision_detect, vision_crop, vision_annotate, vision_extract_foreground.
+- Остаются как доп. функционал: vision_pdf_pages, vision_video_describe, vision_html_screenshot, vision_page_persist, vision_browser_snapshot, vision_batch, vision_materialize, vision_present, vision_export_report, vision_memory_search, vision_verify_generated_image, vision_consensus, vision_ocr_local, vision_long_ocr.
+- Механизм: per-agent `agent.ctx.tools.restrict({deny})` по capability маршрута (как ядровый read_image: `agent.session.requestHeader().config` -> `llm.resolveModelInfo`, native — по `_nativeInputModalities`). Маска снимается/переприменяется при смене маршрута; при недоступности restrict — полный список и однократный warn.
+- Настройка: `hideRedundantTools` (default true) выключает поведение целиком.
