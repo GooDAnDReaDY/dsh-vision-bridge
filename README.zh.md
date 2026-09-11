@@ -84,6 +84,21 @@ graph LR
 
 ---
 
+### 4. 完整工具清单（约 40 个工具）
+
+| 工具类别 | 工具 | 说明 |
+|---|---|---|
+| **核心** | `describe_image`, `read_image`, `inspect_image` | 通过附件 ID、文件路径或 URL 进行通用图像分析。 |
+| **几何与检测** | `vision_ground`, `vision_crop`, `vision_detect`, `vision_compare`, `vision_present` | 边界框坐标（0–1000 刻度）、目标清单、多图对比。 |
+| **OCR 与文本** | `vision_ocr`, `vision_ocr_local`, `vision_long_ocr`, `vision_trace`, `vision_colors`, `vision_extract_foreground` | 文字识别、本地 Tesseract OCR（离线）、长截图拼接、SVG 描摹、调色板。 |
+| **结构化与界面** | `vision_describe_structured`, `vision_vqa`, `vision_ui_layout`, `vision_translate_image` | JSON 结构输出（`{summary, ocr, layout, entities}`）、简短 VQA、界面区块分析。 |
+| **像素与诊断** | `vision_pixel_diff`, `vision_quality_check` | 语义化视觉差异、质量评分（模糊/曝光）。 |
+| **文档与智能** | `vision_extract_formula`, `vision_extract_table`, `vision_scan_barcode`, `vision_extract_structured`, `vision_audit_accessibility` | 公式（LaTeX）、表格（Markdown/HTML）、二维码/条码识别、JSON Schema 抽取、WCAG 无障碍审计。 |
+| **场景、共识与记忆** | `vision_ui_flow`, `vision_consensus`, `vision_memory_search` | 用户旅程图（Mermaid）、多模型共识、已记住图片的语义检索。 |
+| **附件（v0.5.33）** | `vision_attach_pages`, `vision_attach_frames`, `vision_attach_images` | 将 PDF 页面、视频帧、本地/远程图片作为会话附件发布，供原生视觉模型直接查看。 |
+
+---
+
 ## 📦 安装方法
 
 ```bash
@@ -112,6 +127,23 @@ dsh-vision-bridge:
 ```
 
 ---
+
+---
+
+### 参数说明
+
+| 参数 | 类型 | 默认值 | 说明 |
+|---|---|---|---|
+| `mode` | `string` | `"hybrid"` | 处理模式（`hybrid`、`llm`、`tools`）。 |
+| `visionProvider` | `string` | `""` | 视觉服务的 provider ID（留空 = 自动选择）。 |
+| `visionModel` | `string` | `""` | 视觉模型 ID（留空 = 自动选择）。 |
+| `nativePassthrough` | `string` | `"prefer"` | 原生视觉模型的处理方式（`prefer`、`never`、`always`）。 |
+| `hideRedundantTools` | `boolean` | `true` | 当聊天模型原生支持图片时，对该 agent 隐藏补偿类工具，仅保留扩展工具。 |
+| `attachMaxItems` | `number` | `8` | 单次 `vision_attach_*` 调用最多发布的图片数（PDF 页面、视频帧、文件）。硬上限 32。 |
+| `cacheEnabled` | `boolean` | `true` | 是否启用描述结果的 LRU 缓存。 |
+| `cacheMaxEntries` | `number` | `200` | 内存中缓存的条目上限。 |
+| `timeoutMs` | `number` | `120000` | 执行超时（毫秒）。 |
+| `channelFallback` | `string` | `"sequential"` | 通道调度方式（`sequential`、`parallel-race`）；顺序由 `channelOrderMode` 决定。 |
 
 ---
 
@@ -144,6 +176,20 @@ dsh-vision-bridge:
 * **稳定性修复**：完成的批处理记录在 10 分钟轮询窗口后释放（修复内存增长）；`/upload-pdf` 拒绝超过新设置 `maxPdfBytes`（默认 20 MiB）的负载；`vision_memory_search` 按每个附件自身的描述评分；移除宿主死代码；日志标签一致化。
 * **设置**：新增 `maxPdfBytes`（上传硬上限）。
 
+
+## 📝 v0.5.33 中的变更
+
+以原生视觉为核心的版本：桥接不再只服务纯文本模型，也服务本身能看图的模型。
+
+* **附件域（`vision_attach_pages`、`vision_attach_frames`、`vision_attach_images`）**：PDF 页面、抽取的视频帧以及来自文件、目录和 URL 的图片会作为**会话附件**发布，原生视觉模型直接查看像素，无需再支付一次视觉调用。图片按 `imageMaxWidth`/`imageMaxHeight`/`imageQuality` 压缩并受 `maxImageBytes` 限制；URL 走与其他路径相同的 SSRF 策略，本地路径受 `allowedImageDirs` 限制。
+* **按模型决定工具集**：当聊天模型本身支持图片时，对该 agent 隐藏桥接的补偿类工具，仅保留扩展工具；纯文本路由则相反——隐藏附件工具，因为这类模型看不到附件。该行为由新设置 `hideRedundantTools` 控制（默认开启）。
+* **配置卡片新增设置**：**Attachments** 分组提供 `attachMaxItems`（整数 1–32，默认 8，即单次 attach 调用发布的图片数）与 `hideRedundantTools`。保存时会校验，超出范围会给出明确错误。图片尺寸字段现在也会写入实时设置快照，而不只是路由。
+* **Batch API**：`DELETE /batch/:id` 可立即释放已完成的批量任务，与 start/cancel 使用相同的同源保护。批量记录的 TTL 定时器不再让短生命周期进程挂住，测试套件因此从 10 分钟降到约 3.5 秒。
+* **tools 模式**：聊天中附加的图片现在会在净化门之前建立索引，因此按附件 ID 工作的工具（以及 `read_image` 别名）在 `tools` 模式下同样可用；此前这些 ID 在该模式下不可用。
+* **修复**：单个不可读来源不再中断 `vision_attach_images`，而是记为 `Skipped N: <名称>: <原因>`，其余来源照常附加；fetch 策略拒绝仍然是硬错误。PDF 文本层现在真正生效（此前 `pdftotext` 一直未被识别，文本层静默缺失）。被上限截断的页码范围或帧数会在 `truncated` 与提示中体现。
+* **内部**：CI 无需 `sudo` 安装 poppler、每个提交只跑一次、按 ref 串行，并为帧测试安装 ffmpeg；仓库新增 PR 模板并忽略 `.worktrees/`。
+
+---
 
 ## 📄 开源许可
 
