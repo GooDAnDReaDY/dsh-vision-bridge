@@ -93,6 +93,8 @@ graph LR
 | **OCR 与文本** | `vision_ocr`, `vision_ocr_local`, `vision_long_ocr`, `vision_trace`, `vision_colors`, `vision_extract_foreground` | 文字识别、本地 Tesseract OCR（离线）、长截图拼接、SVG 描摹、调色板。 |
 | **结构化与界面** | `vision_describe_structured`, `vision_vqa`, `vision_ui_layout`, `vision_translate_image` | JSON 结构输出（`{summary, ocr, layout, entities}`）、简短 VQA、界面区块分析。 |
 | **像素与诊断** | `vision_pixel_diff`, `vision_quality_check` | 语义化视觉差异、质量评分（模糊/曝光）。 |
+| **文档与智能** | `vision_extract_formula`, `vision_extract_table`, `vision_scan_barcode`, `vision_extract_structured`, `vision_audit_accessibility` | 公式（LaTeX）、表格（Markdown/HTML）、二维码/条码识别、JSON Schema 抽取、WCAG 无障碍审计。 |
+| **场景、共识与记忆** | `vision_ui_flow`, `vision_consensus`, `vision_memory_search` | 用户旅程图（Mermaid）、多模型共识、已记住图片的语义检索。 |
 | **附件（v0.5.33）** | `vision_attach_pages`, `vision_attach_frames`, `vision_attach_images` | 将 PDF 页面、视频帧、本地/远程图片作为会话附件发布，供原生视觉模型直接查看。 |
 
 ---
@@ -183,6 +185,7 @@ dsh-vision-bridge:
 * **按模型决定工具集**：当聊天模型本身支持图片时，对该 agent 隐藏桥接的补偿类工具，仅保留扩展工具；纯文本路由则相反——隐藏附件工具，因为这类模型看不到附件。该行为由新设置 `hideRedundantTools` 控制（默认开启）。
 * **配置卡片新增设置**：**Attachments** 分组提供 `attachMaxItems`（整数 1–32，默认 8，即单次 attach 调用发布的图片数）与 `hideRedundantTools`。保存时会校验，超出范围会给出明确错误。图片尺寸字段现在也会写入实时设置快照，而不只是路由。
 * **Batch API**：`DELETE /batch/:id` 可立即释放已完成的批量任务，与 start/cancel 使用相同的同源保护。批量记录的 TTL 定时器不再让短生命周期进程挂住，测试套件因此从 10 分钟降到约 3.5 秒。
+* **tools 模式**：聊天中附加的图片现在会在净化门之前建立索引，因此按附件 ID 工作的工具（以及 `read_image` 别名）在 `tools` 模式下同样可用；此前这些 ID 在该模式下不可用。
 * **修复**：单个不可读来源不再中断 `vision_attach_images`，而是记为 `Skipped N: <名称>: <原因>`，其余来源照常附加；fetch 策略拒绝仍然是硬错误。PDF 文本层现在真正生效（此前 `pdftotext` 一直未被识别，文本层静默缺失）。被上限截断的页码范围或帧数会在 `truncated` 与提示中体现。
 * **内部**：CI 无需 `sudo` 安装 poppler、每个提交只跑一次、按 ref 串行，并为帧测试安装 ffmpeg；仓库新增 PR 模板并忽略 `.worktrees/`。
 

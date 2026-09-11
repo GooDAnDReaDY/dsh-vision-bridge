@@ -91,6 +91,9 @@ Caches vision responses by `hash(bytes + prompt + model + mode)` to eliminate re
 | **OCR & Text** | `vision_ocr`, `vision_ocr_local`, `vision_long_ocr`, `vision_trace`, `vision_colors`, `vision_extract_foreground` | Transcription, local Tesseract OCR (offline), long screenshot stitching, SVG tracing, color palettes. |
 | **Structured & UI** | `vision_describe_structured`, `vision_vqa`, `vision_ui_layout`, `vision_translate_image` | JSON breakdown (`{summary, ocr, layout, entities}`), short VQA, UI section analysis. |
 | **Pixel & Diagnostics** | `vision_pixel_diff`, `vision_quality_check` | Semantic visual diff, quality scoring (blur/lighting). |
+| **Documents & Intelligence** | `vision_extract_formula`, `vision_extract_table`, `vision_scan_barcode`, `vision_extract_structured`, `vision_audit_accessibility` | Formula (LaTeX), table (Markdown/HTML), QR/barcode scan, JSON-schema extraction, WCAG accessibility audit. |
+| **Scenarios, Consensus & Memory** | `vision_ui_flow`, `vision_consensus`, `vision_memory_search` | User-journey graph (Mermaid), multi-model consensus, semantic search over remembered images. |
+| **Attachments (v0.5.33)** | `vision_attach_pages`, `vision_attach_frames`, `vision_attach_images` | Publish PDF pages, video frames and local/remote images as conversation attachments so native-vision chat models read the pixels themselves. |
 
 ---
 
@@ -189,6 +192,7 @@ Vision-first release: the bridge now serves chat models that see images natively
 * **Model-aware tool exposure**: on a route whose chat model already accepts images, the compensation tools of the bridge are hidden from that agent (the model does not need them) and only the extra instruments remain; on a text-only route the attach tools are hidden instead, because that model cannot see an attachment. The behaviour is controlled by the new `hideRedundantTools` setting (on by default).
 * **New settings in the plugin card**: an **Attachments** group exposes `attachMaxItems` (whole number 1–32, default 8 — how many images one attach call publishes) and `hideRedundantTools`. Both are validated on save; a value outside the range is rejected with a clear message. The image dimension fields are now also written to the live settings snapshot, not only to the route.
 * **Batch API**: `DELETE /batch/:id` releases a finished batch immediately, under the same same-origin guard as start/cancel. The batch record's TTL timer no longer keeps a short-lived process alive, which cut the test suite from 10 minutes to ~3.5 seconds.
+* **Tools mode**: images attached in chat are now indexed before the sanitisation gate, so tools that take an attachment id (and the `read_image` alias) work in `tools` mode as well; previously the ids were unavailable there.
 * **Fixes**: one unreadable source no longer aborts `vision_attach_images` — it is reported as `Skipped N: <name>: <reason>` while the readable sources still attach, and a fetch-policy refusal stays a hard error; the PDF text layer actually appears now (`pdftotext` was never detected, so the layer silently never shipped); a page range or frame count cut by the cap is reported through `truncated` and the note.
 * **Internal**: CI installs poppler without `sudo`, runs once per commit, serializes per ref and installs ffmpeg for the frame tests; the repository gained the pull-request template and ignores `.worktrees/`.
 
