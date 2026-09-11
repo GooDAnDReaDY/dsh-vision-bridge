@@ -216,6 +216,30 @@ describe('#222 settings card audit & safe lifecycle', () => {
       }), res)
       assert.equal(res.status, 400, `attachMaxItems=${bad} must be rejected`)
       assert.match(JSON.parse(res.body).error, /attachMaxItems must be a number between 1 and 32/)
+      // #269 review: a rejected value must not have been persisted by the route
+      const after = fakeRes()
+      await handler(fakeReq({ method: 'GET' }), after)
+      assert.equal(JSON.parse(after.body).attachMaxItems, 4, `GET must still report the last valid cap after rejecting ${bad}`)
     }
+
+    const notBool = fakeRes()
+    await handler(fakeReq({
+      method: 'POST',
+      headers: { 'sec-fetch-site': 'same-origin' },
+      body: JSON.stringify({ hideRedundantTools: 'yes' }),
+    }), notBool)
+    assert.equal(notBool.status, 400)
+    assert.match(JSON.parse(notBool.body).error, /hideRedundantTools must be a boolean/)
+  })
+
+  it('#269 review the card refuses an out-of-range cap before writing anything', () => {
+    const src = clientSrc()
+    // the guard must live in save() ahead of the settings snapshot write
+    const guard = src.indexOf('attachMaxItemsRange')
+    assert.ok(guard > 0, 'range message missing')
+    const snapshotWrite = src.indexOf('scope.update({')
+    assert.ok(guard < snapshotWrite, 'the guard must run before scope.update')
+    assert.match(src, /const cap = Number\(attachMaxItems\)/)
+    assert.match(src, /if \(!Number\.isFinite\(cap\) \|\| cap < 1 \|\| cap > 32\)/)
   })
 })
