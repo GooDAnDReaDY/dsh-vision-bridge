@@ -107,3 +107,29 @@ describe('#242 review follow-ups', async () => {
     assert.equal(lifted.length, 1, 'the mask must be lifted when the behavior is disabled')
   })
 })
+
+describe('#242 follow-up: forced bridging keeps the tools', async () => {
+  it("nativePassthrough='never' does not mask a vision route (bridge is forced)", async () => {
+    const { ctx } = await setupWithAttachment({ config: { nativePassthrough: 'never' }, modelInfo: VISION_INFO })
+    const { agent, restricted } = fakeAgent({ provider: 'p', model: 'vision-model' })
+    await runPreStep(ctx, agent)
+    assert.equal(restricted.length, 0, 'forced bridging keeps the compensation tools available')
+  })
+
+  it("nativePassthrough='always' masks a vision route (bridge never runs)", async () => {
+    const { ctx } = await setupWithAttachment({ config: { nativePassthrough: 'always' }, modelInfo: VISION_INFO })
+    const { agent, restricted } = fakeAgent({ provider: 'p', model: 'vision-model' })
+    await runPreStep(ctx, agent)
+    assert.equal(restricted.length, 1)
+  })
+  it('a runtime nativePassthrough change re-evaluates the mask on the same route', async () => {
+    const { ctx } = await setupWithAttachment({ config: {}, modelInfo: VISION_INFO })
+    const { agent, restricted, lifted } = fakeAgent({ provider: 'p', model: 'vision-model' })
+    await runPreStep(ctx, agent)
+    assert.equal(restricted.length, 1)
+    ctx.config.nativePassthrough = 'never' // same route, bridge forced
+    await runPreStep(ctx, agent)
+    assert.equal(lifted.length, 1, 'the stale mask must be lifted when bridging is forced')
+    assert.equal(restricted.length, 1, 'no new mask under forced bridging')
+  })
+})
