@@ -1,6 +1,16 @@
 # #208: CI — run the executable suite and the DSH size guard on every push/PR.
+# #252: push is limited to main. With a PR open, a branch push started a second
+# run of the same commit, and two concurrent runs race for the runner's shared
+# act action cache (/root/.cache/act), leaving one red before any test runs.
+# The workflow-wide concurrency group serializes runs for the same reason.
 name: test
-on: [push, pull_request]
+on:
+  push:
+    branches: [main]
+  pull_request:
+concurrency:
+  group: dsh-vision-bridge-ci
+  cancel-in-progress: false
 jobs:
   test:
     runs-on: ubuntu-latest
