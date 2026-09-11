@@ -35,9 +35,17 @@ vision-инструментов.
 ## Build / test
 
 ```bash
-npm test          # весь набор node --test (счётчик — в выводе прогона)
-node --check lib/*.js
+npm test                                                  # весь набор node --test
+node --check lib/*.js                                     # синтаксис
+node --test --experimental-test-coverage test/*.test.js   # покрытие (порог правил: 80%)
 ```
+
+## Зависимости и аудит
+
+- **Runtime-зависимостей нет**: `dependencies` пуст, объявлены только peer-зависимости хоста DSH (`@deepseek-ai/cordis`, `dsh-tools`, `dsh-llm`, `dsh-attachment`, `dsh-agent`, `dsh-host-webserver`, `schemastery`); их предоставляет харнесс. `npx npm-check-updates` → «No dependencies».
+- **`npm audit` / `pnpm audit` неприменимы намеренно**: `pnpm-lock.yaml` в `.gitignore`, lockfile в git не хранится, команды падают с `ENOLOCK` / `ERR_PNPM_AUDIT_NO_LOCKFILE` (issue #256). Это осознанный эквивалент проверки зависимостей для этого проекта, а не пропуск.
+- **Эквивалент проверки**: пустой `dependencies` (нет транзитивных зависимостей), явный `files`-манифест пакета, разрешение peer-зависимостей в CI (`npm install` + `npm test`) и size guard (`npm pack --dry-run`, лимит 262144 B на файл).
+- Хранить lockfile и вернуться к `pnpm audit` (вариант B по #256) можно только отдельной задачей с согласованием: это меняет процесс сборки и установки.
 
 ## Deploy
 
