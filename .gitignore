@@ -19,6 +19,9 @@ build/
 *.log
 coverage/
 
+# git worktrees — the only allowed parallel working area, never committed
+.worktrees/
+
 # OS / editor
 .DS_Store
 Thumbs.db
