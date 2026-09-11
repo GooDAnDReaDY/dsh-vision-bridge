@@ -117,6 +117,7 @@ dsh-vision-bridge:
   
   # Allow vision models to receive images natively without rewriting ('prefer' | 'never' | 'always')
   nativePassthrough: prefer
+  hideRedundantTools: true   # hide bridge tools when the chat model already sees images
   
   # Enable LRU description cache
   cacheEnabled: true
@@ -138,6 +139,7 @@ dsh-vision-bridge:
 | `visionProvider` | `string` | `""` | ID of the vision provider (empty = auto-detect). |
 | `visionModel` | `string` | `""` | ID of the vision model (empty = auto-detect). |
 | `nativePassthrough` | `string` | `"prefer"` | Behavior for native vision models (`prefer`, `never`, `always`). |
+| `hideRedundantTools` | `boolean` | `true` | When the chat model supports images natively, hide the compensation tools from that agent and keep only the extra instruments. |
 | `cacheEnabled` | `boolean` | `true` | Enables LRU caching for descriptions. |
 | `cacheMaxEntries` | `number` | `200` | Maximum number of cached items in memory. |
 | `timeoutMs` | `number` | `120000` | Execution timeout in milliseconds. |

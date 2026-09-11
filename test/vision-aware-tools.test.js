@@ -73,3 +73,37 @@ describe('#242 vision-route hides compensation tools', async () => {
     await assert.doesNotReject(() => runPreStep(ctx, agent))
   })
 })
+
+describe('#242 review follow-ups', async () => {
+  it('the deny list never contains an extra instrument', async () => {
+    const { ctx } = await setupWithAttachment({ config: {}, modelInfo: VISION_INFO })
+    const { agent, restricted } = fakeAgent({ provider: 'p', model: 'vision-model' })
+    await runPreStep(ctx, agent)
+    const deny = new Set(restricted[0].deny)
+    const extras = ['vision_pdf_pages', 'vision_video_describe', 'vision_html_screenshot', 'vision_page_persist',
+      'vision_browser_snapshot', 'vision_batch', 'vision_materialize', 'vision_present', 'vision_export_report',
+      'vision_memory_search', 'vision_verify_generated_image', 'vision_consensus', 'vision_ocr_local',
+      'vision_long_ocr', 'vision_compare']
+    for (const name of extras) assert.equal(deny.has(name), false, name + ' is an extra and must stay visible')
+  })
+
+  it('a route switching from text-only to vision gets the mask', async () => {
+    const { ctx } = await setupWithAttachment({ config: {}, modelInfo: TEXT_INFO })
+    const { agent, restricted } = fakeAgent({ provider: 'p', model: 'text-model' })
+    await runPreStep(ctx, agent)
+    assert.equal(restricted.length, 0)
+    agent.session.requestHeader = () => ({ config: { provider: 'p', model: 'vision-model' } })
+    ctx.llm.resolveModelInfo = async (provider, model) => (model === 'vision-model' ? VISION_INFO : TEXT_INFO)
+    await runPreStep(ctx, agent)
+    assert.equal(restricted.length, 1)
+  })
+
+  it('turning hideRedundantTools off at runtime lifts the mask', async () => {
+    const { ctx } = await setupWithAttachment({ config: {}, modelInfo: VISION_INFO })
+    const { agent, lifted } = fakeAgent({ provider: 'p', model: 'vision-model' })
+    await runPreStep(ctx, agent)
+    ctx.config.hideRedundantTools = false
+    await runPreStep(ctx, agent)
+    assert.equal(lifted.length, 1, 'the mask must be lifted when the behavior is disabled')
+  })
+})
