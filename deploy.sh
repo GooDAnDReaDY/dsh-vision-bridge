@@ -27,6 +27,14 @@ if [ -f "${HOME}/.dsh/settings.yaml" ]; then
   fi
 fi
 
+# #293: snapshot the profile dependencies before install so any packages lost
+# by the pnpm prune are reported instead of disappearing silently.
+PROFILE_PKG="${HOME}/.dsh/profiles/${PROFILE}/package.json"
+if [ -f "$PROFILE_PKG" ]; then
+  cp "$PROFILE_PKG" /tmp/deploy-pre-deps.json
+  echo "-- pre-install deps: $(python3 -c "import json;print(len(json.load(open('$PROFILE_PKG')).get('dependencies',{})))" 2>/dev/null || echo '?') packages"
+fi
+
 echo "-- install"
 if [ "$VERSION" = "latest" ]; then
   dsh plugin --profile "$PROFILE" add "$PACKAGE"
@@ -38,6 +46,26 @@ echo "-- restart ${SERVICE}"
 systemctl restart "$SERVICE"
 sleep 2
 systemctl is-active "$SERVICE"
+
+echo "-- post-install deps integrity check (#293)"
+if [ -f "$PROFILE_PKG" ] && [ -f /tmp/deploy-pre-deps.json ]; then
+  python3 - <<'DEPS'
+import json, sys
+pre = json.load(open('/tmp/deploy-pre-deps.json')).get('dependencies', {})
+post = json.load(open('/home/vadim/.dsh/profiles/web/package.json')).get('dependencies', {})
+lost = {k: v for k, v in pre.items() if k not in post}
+gained = {k: v for k, v in post.items() if k not in pre}
+if lost:
+    print("WARNING: packages lost during install:")
+    for k, v in sorted(lost.items()): print(f"  - {k} {v}")
+if gained:
+    print("Packages gained:")
+    for k, v in sorted(gained.items()): print(f"  + {k} {v}")
+if not lost and not gained:
+    print("Profile dependencies unchanged.")
+DEPS
+  rm -f /tmp/deploy-pre-deps.json
+fi
 
 echo "-- post-deploy checks"
 code() { curl -s -o /dev/null -w '%{http_code}' "$1"; }
