@@ -43,10 +43,15 @@ function fsStub() {
 const attachTool = (ctx) => ctx.toolDefs.get('vision_attach_images')
 
 describe('#246 attach publish path', async () => {
-  it('resolvedPathOf prefers displayPath over a missing .path', () => {
+  it('resolvedPathOf prefers the process path over displayPath', () => {
     assert.equal(resolvedPathOf({ targetKey: 'k', displayPath: '/tmp/x.pdf' }), '/tmp/x.pdf')
     assert.equal(resolvedPathOf('/plain/path'), '/plain/path')
-    assert.equal(resolvedPathOf({ displayPath: '/d' }, { processPath: () => '/from-process' }), '/d')
+    // fs.processPath is the canonical path a subprocess can open; displayPath is
+    // display-only and may differ in a sandboxed/remote execution world.
+    assert.equal(resolvedPathOf({ displayPath: '/d' }, { processPath: () => '/from-process' }), '/from-process')
+    assert.equal(resolvedPathOf({ displayPath: '/d', path: '/explicit' }, { processPath: () => '/from-process' }), '/explicit')
+    // a throwing processPath must fall back to displayPath
+    assert.equal(resolvedPathOf({ displayPath: '/d' }, { processPath: () => { throw new Error('nope') } }), '/d')
     assert.equal(resolvedPathOf({ targetKey: 'k' }, { processPath: () => '/from-process' }), '/from-process')
     assert.equal(resolvedPathOf(null), '')
   })
