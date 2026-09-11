@@ -28,7 +28,7 @@
 
 ## ⚡ 概述与核心解决问题
 
-在 **DeepSeek Harness** 中与纯文本模型（如 `deepseek-v3`、Qwen 纯文本版本等）对话时，用户无法直接在聊天窗口附加和发送图片：
+在 **DeepSeek Harness** 中与纯文本聊天模型（任何仅接受文本的 provider/model）对话时，用户无法直接在聊天窗口附加和发送图片：
 
 1. 在 **DSH 0.1.2-alpha.2+** 中，后端会话控制器进行严格的模态校验 (`ctx.llm.resolveModelInfo`)。如果当前对话模型的 `inputModalities` 中不包含 `'image'`，请求会被直接拒绝并报错 `session/attachment-invalid` ("Model does not support image input")。
 2. 纯文本适配器如果直接接收到多模态图像块，会抛出请求错误。
@@ -37,7 +37,7 @@
 
 `dsh-vision-bridge` 在 Cordis 运行时内建立透明代理：
 * **服务端模态桥接 (v0.5.3+)**：自动包装 `ctx.llm.resolveModelInfo` 和 `ctx.llm.listModels`，使会话网关允许所有模型接收图像附件。
-* **自动图像改写 (`agent/pre-step` 与 `llm/stream`)**：自动拦截图片，调用独立的视觉模型（如 Gemini、Claude、Qwen-VL 或本地 Ollama）生成描述，并将图片替换为文本提示 `[用户上传了图片。内容描述：...]` 传递给纯文本模型。
+* **自动图像改写 (`agent/pre-step` 与 `llm/stream`)**：自动拦截图片，调用所配置的视觉模型（目录中的 provider/model，或本地 OpenAI 兼容端点）生成描述，并将图片替换为文本提示 `[用户上传了图片。内容描述：...]` 传递给纯文本模型。
 * **原生直通 (Native Passthrough)**：自动识别原生支持视觉的模型并直接传递图像，无需重复转换。
 * **约 40 个专用视觉工具**：提供 OCR、目标定位 (grounding)、UI 结构解析、表格/公式提取、二维码识别、UI 流程重建与多模型共识等完整工具套件。
 
@@ -76,7 +76,7 @@ graph LR
 支持多视觉后端级联、故障熔断与并发竞速：
 * `dsh-catalog`：自动或手动选择 DSH 中已注册的视觉模型。
 * `openai-compatible`：支持 vLLM、SGLang、OpenRouter 等 OpenAI 兼容视觉接口。
-* `ollama`：自动发现并调用本地 Ollama 视觉模型。
+* `ollama`：自动发现并调用本地 Ollama 实例提供的任意视觉模型。
 * `webhook` / `custom`：外部 HTTP / JSON-RPC 服务。
 
 ### 3. LRU 响应缓存
