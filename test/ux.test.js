@@ -171,4 +171,51 @@ describe('#222 settings card audit & safe lifecycle', () => {
     assert.equal(data.channelFallback, 'parallel-race')
     assert.equal(data.nativePassthrough, 'never')
   })
+
+  it('#269 the card exposes and saves the attach settings', async () => {
+    const src = clientSrc()
+    for (const key of ['attachMaxItems', 'hideRedundantTools']) {
+      assert.ok(src.includes(`t('${key}')`), `${key} label missing from the card`)
+      assert.ok(src.includes(`set${key[0].toUpperCase()}${key.slice(1)}`), `${key} state setter missing`)
+    }
+    // the label must be a locale key in the English source dictionary, not a literal
+    assert.match(src, /attachMaxItems: 'Max attachments per call'/)
+    assert.match(src, /hideRedundantTools: 'Hide bridge tools on vision models'/)
+    // and the card must send them to both the settings scope and the route
+    assert.ok(src.includes('attachMaxItems,\n              hideRedundantTools,'), 'scope.update payload')
+    assert.ok(src.includes('imageQuality, attachMaxItems, hideRedundantTools,'), 'POST payload')
+  })
+
+  it('#269 GET /config reports the attach settings and POST validates the cap', async () => {
+    const { ctx } = await setupWithAttachment()
+    const handler = ctx.routes.get('/dsh-vision-bridge/config').handler
+    const get = fakeRes()
+    await handler(fakeReq({ method: 'GET' }), get)
+    assert.equal(get.status, 200)
+    const d = JSON.parse(get.body)
+    assert.equal(typeof d.attachMaxItems, 'number')
+    assert.equal(typeof d.hideRedundantTools, 'boolean')
+
+    const ok = fakeRes()
+    await handler(fakeReq({
+      method: 'POST',
+      headers: { 'sec-fetch-site': 'same-origin' },
+      body: JSON.stringify({ attachMaxItems: 4, hideRedundantTools: false }),
+    }), ok)
+    assert.equal(ok.status, 200)
+    const saved = JSON.parse(ok.body)
+    assert.equal(saved.attachMaxItems, 4)
+    assert.equal(saved.hideRedundantTools, false)
+
+    for (const bad of [0, 33, 'many']) {
+      const res = fakeRes()
+      await handler(fakeReq({
+        method: 'POST',
+        headers: { 'sec-fetch-site': 'same-origin' },
+        body: JSON.stringify({ attachMaxItems: bad }),
+      }), res)
+      assert.equal(res.status, 400, `attachMaxItems=${bad} must be rejected`)
+      assert.match(JSON.parse(res.body).error, /attachMaxItems must be a number between 1 and 32/)
+    }
+  })
 })
