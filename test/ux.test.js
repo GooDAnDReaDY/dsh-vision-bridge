@@ -207,7 +207,7 @@ describe('#222 settings card audit & safe lifecycle', () => {
     assert.equal(saved.attachMaxItems, 4)
     assert.equal(saved.hideRedundantTools, false)
 
-    for (const bad of [0, 33, 4.5, 'many']) {
+    for (const bad of [0, 33, 4.5, 'many', true, false, '4']) {
       const res = fakeRes()
       await handler(fakeReq({
         method: 'POST',
@@ -216,10 +216,22 @@ describe('#222 settings card audit & safe lifecycle', () => {
       }), res)
       assert.equal(res.status, 400, `attachMaxItems=${bad} must be rejected`)
       assert.match(JSON.parse(res.body).error, /attachMaxItems must be a whole number between 1 and 32/)
-      // #269 review: a rejected value must not have been persisted by the route
+      // #269 review: a rejected value must not have been persisted by the route.
+      // The last accepted value here is 4 (the boundary writes below run later).
       const after = fakeRes()
       await handler(fakeReq({ method: 'GET' }), after)
       assert.equal(JSON.parse(after.body).attachMaxItems, 4, `GET must still report the last valid cap after rejecting ${bad}`)
+    }
+    // #276: boundaries stay valid, and a boolean/string must not be coerced into one
+    for (const good of [1, 32]) {
+      const okEdge = fakeRes()
+      await handler(fakeReq({
+        method: 'POST',
+        headers: { 'sec-fetch-site': 'same-origin' },
+        body: JSON.stringify({ attachMaxItems: good }),
+      }), okEdge)
+      assert.equal(okEdge.status, 200, `attachMaxItems=${good} must be accepted`)
+      assert.equal(JSON.parse(okEdge.body).attachMaxItems, good)
     }
 
     const notBool = fakeRes()
