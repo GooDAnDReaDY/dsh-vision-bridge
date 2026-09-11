@@ -10,7 +10,15 @@ jobs:
         with:
           node-version: 20
       - name: install system tools used by tests (pdftoppm for /upload-pdf)
-        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends poppler-utils
+        run: |
+          # The runner's act container is root and ships no sudo, so only use it
+          # when we are actually unprivileged. poppler-utils stays mandatory:
+          # test/routes.smoke.test.js needs a real pdftoppm to get 422, not 500.
+          SUDO=""
+          if [ "$(id -u)" != "0" ] && command -v sudo >/dev/null 2>&1; then SUDO="sudo"; fi
+          $SUDO apt-get update
+          $SUDO apt-get install -y --no-install-recommends poppler-utils
+          pdftoppm -v
       - name: install dependencies (peers resolve automatically)
         run: npm install --no-audit --no-fund
       - name: syntax check

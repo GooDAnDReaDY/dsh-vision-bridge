@@ -222,6 +222,13 @@ describe('#201 route guards', async () => {
     const cancel = fakeRes()
     await handler(fakeReq({ method: 'POST', headers: { 'sec-fetch-site': 'cross-site' }, url: '/dsh-vision-bridge/batch/b1/cancel' }), cancel)
     assert.equal(cancel.status, 403)
+    // #249: releasing a batch destroys its record, so it is guarded like the rest.
+    const release = fakeRes()
+    await handler(fakeReq({ method: 'DELETE', headers: { 'sec-fetch-site': 'cross-site' }, url: '/dsh-vision-bridge/batch/b1' }), release)
+    assert.equal(release.status, 403)
+    const sameOrigin = fakeRes()
+    await handler(fakeReq({ method: 'DELETE', headers: { 'sec-fetch-site': 'same-origin' }, url: '/dsh-vision-bridge/batch/b1' }), sameOrigin)
+    assert.equal(sameOrigin.status, 404, 'the guard passed and the unknown id was reported')
   })
 
   it('DELETE /journal and DELETE /cache are forbidden cross-site, allowed same-origin', async () => {
