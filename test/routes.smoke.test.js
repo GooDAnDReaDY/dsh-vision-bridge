@@ -86,6 +86,16 @@ describe('/batch flow (#227/#232)', async () => {
     assert.equal(state.ok, 1)
     assert.equal(state.failed, 0)
     assert.match(state.results[0].description, /image description unavailable/)
+
+    // #249: the release the title promises is a real call, not just the TTL expiring.
+    const rel = fakeRes()
+    await handler(fakeReq({ method: 'DELETE', headers: SAME_ORIGIN, url: '/dsh-vision-bridge/batch/' + bid }), rel)
+    assert.equal(rel.status, 200)
+    assert.deepEqual(JSON.parse(rel.body), { ok: true, released: true })
+
+    const gone = fakeRes()
+    await handler(fakeReq({ method: 'GET', url: '/dsh-vision-bridge/batch/' + bid }), gone)
+    assert.equal(gone.status, 404, 'a released batch is no longer pollable')
   })
 
   it('cancel of an unknown batch id is 404', async () => {

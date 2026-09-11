@@ -119,7 +119,7 @@ dsh-vision-bridge:
 
 * **SSRF 抓取策略**：模型提供的图片 URL（`describe_image` 的 urls、`inspect_image` 以及 headless-chrome 工具）只能通过策略层抓取——非 http(s) 协议、localhost 名称以及私有/回环/链路本地主机（包括 IPv4 映射 IPv6 和 NAT64）在每一次重定向跳转中都会被拒绝；响应体有大小上限。新设置 `allowedUrlHosts`（精确主机名白名单）可显式放行内部端点。
 * **`apiKeyRef`**：通道可以按名称引用凭据服务条目或环境变量——`settings.yaml` 中不再需要明文 `apiKey`。现有的内联 `apiKey` 继续有效；保存时掩码密钥的保留按通道标识匹配，而非数组位置。
-* **路由防护**：`POST /bench`、`POST /batch`、`DELETE /journal`、`DELETE /cache` 与其他变更类路由一样要求同源。`GET /doctor` 默认为静态；仅 `?probe=1` 时进行通道探测（需要同源）。
+* **路由防护**：`POST /bench`、`POST /batch`、`DELETE /batch/:id`、`DELETE /journal`、`DELETE /cache` 与其他变更类路由一样要求同源。`GET /doctor` 默认为静态；仅 `?probe=1` 时进行通道探测（需要同源）。
 * **设置诚实性**：`maskPII`、`stripEXIF`、`auditLog`、`consensusEnabled` 已端到端生效。此前仅具装饰性的 `blurFaces`、`nsfwFilter`、`tileLargeImages`/`tileThreshold` 开关和无效的 Local/Cloud/LM Studio 预设已被移除。Changed in v0.5.30：如果您曾依赖它们，请注意它们从未产生过效果。
 * **英语为源语言**：所有用户可见字符串均为英语；捆绑的俄语字典已移除——运行时的俄语由翻译插件提供。
 * **核心拆分**：纯内核（配置模式 + 辅助函数）移至 `lib/vision-core.js`；`lib/index.js` 对其进行重新导出——API 无变化。修复了 v0.5.13 中 `describe_image` 返回空描述的回归；`vision_annotate` 恢复工作；pHash 缓存不再混淆相似图片。
