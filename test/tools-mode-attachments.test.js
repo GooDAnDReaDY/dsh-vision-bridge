@@ -30,7 +30,7 @@ describe('#239 tools mode still indexes chat attachments', async () => {
       'the attachment id must resolve in tools mode')
   })
 
-  it('paths/urls sources are unaffected', async () => {
+  it('still rejects an unknown attachment id (indexing accepts nothing blindly)', async () => {
     const { ctx } = await setupWithAttachment({ config: { mode: 'tools' } })
     await runPreStep(ctx, [IMAGE_MESSAGE])
     const tool = ctx.toolDefs.get('describe_image')
