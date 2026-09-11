@@ -28,7 +28,7 @@
 
 ## ⚡ Overview & The Problem
 
-When interacting with text-only LLM models (e.g. `deepseek-v3`, Qwen text-only variants) in **DeepSeek Harness**, users cannot natively attach and send images:
+When interacting with text-only chat models (any provider/model that accepts text only) in **DeepSeek Harness**, users cannot natively attach and send images:
 
 1. In **DSH 0.1.2-alpha.2+**, the core session controller performs a strict server-side modality check (`ctx.llm.resolveModelInfo`). If the active conversation model lacks `image` in `inputModalities`, the prompt is immediately rejected with a `session/attachment-invalid` error ("Model does not support image input").
 2. Standard text-only adapters throw errors when encountering raw multimodal image blocks in their message payload.
@@ -37,7 +37,7 @@ When interacting with text-only LLM models (e.g. `deepseek-v3`, Qwen text-only v
 
 `dsh-vision-bridge` acts as an intelligent intermediary inside the Cordis runtime:
 * **Server-Side Modality Bridge (v0.5.3+)**: Decorates `ctx.llm.resolveModelInfo` and `ctx.llm.listModels` so the session controller accepts image attachments on all models when bridging is active.
-* **Automatic Image Rewrite (`agent/pre-step` & `llm/stream`)**: Automatically intercepts image blocks, routes them to a configured vision model (e.g. Gemini, Claude, Qwen-VL, or local Ollama), receives a descriptive synthesis, and rewrites the image block into text context `[The user attached an image. Description: ...]` before handing it to the text-only chat model.
+* **Automatic Image Rewrite (`agent/pre-step` & `llm/stream`)**: Automatically intercepts image blocks, routes them to a configured vision model (a catalog provider/model, or a local OpenAI-compatible endpoint), receives a descriptive synthesis, and rewrites the image block into text context `[The user attached an image. Description: ...]` before handing it to the text-only chat model.
 * **Native Passthrough**: Automatically detects models that natively support vision and allows images to pass directly without unnecessary rewriting.
 * **Rich Visual Tool Suite**: Exposes ~40 specialized tools for on-demand OCR (incl. local Tesseract), visual question answering, bounding-box grounding, document/table/formula extraction, QR/barcode reading, UI-flow reconstruction, multi-model consensus and more. `vision_consensus` is opt-in via the `consensusEnabled` setting.
 
@@ -76,7 +76,7 @@ graph LR
 Chain multiple vision backends with automatic failover, parallel racing, and circuit breaker:
 * `dsh-catalog`: Auto-detect or select any vision-capable model already registered in DSH.
 * `openai-compatible`: Standard OpenAI-compatible vision endpoints (vLLM, SGLang, OpenRouter, etc.).
-* `ollama`: Auto-discovery and local inference through Ollama vision models (e.g. `minicpm-v`, `llama3.2-vision`).
+* `ollama`: Auto-discovery and local inference through any vision-capable model the local Ollama instance exposes.
 * `webhook` / `custom`: External HTTP or JSON-RPC vision endpoints.
 
 ### 3. High-Performance LRU Description Cache
