@@ -152,6 +152,16 @@ dsh-vision-bridge:
 
 ---
 
+### 15. 🛡️ Enterprise Security & Settings Governance (`v0.5.27`)
+* **Masked Secrets**: `GET /channels` automatically masks sensitive provider API keys (`sk-p...7890` or `********`) and reports `hasApiKey: true` to prevent secret leakage in browser DevTools/XHR. `POST /channels` preserves existing keys when a mask is submitted.
+* **CSRF & Origin Guard**: All mutating and cost-incurring endpoints (`/config`, `/channels`, `/upload-pdf`, `/test`, `/bench`, `/batch`, `DELETE /journal`, `DELETE /cache`, and `/doctor?probe=1`) validate `sec-fetch-site !== 'cross-site'` via `isTrustedSettingsRequest`, rejecting cross-origin attacks with `403 Forbidden`. The default `GET /doctor` report is static (no channel probes).
+* **SSRF fetch policy**: model-supplied image URLs are fetched only through `safeFetch` — non-http(s) schemes, localhost names and private/loopback/link-local hosts (incl. IPv4-mapped IPv6 and NAT64) are refused on every redirect hop; response bodies are capped. Use `allowedUrlHosts` to explicitly re-allow an internal endpoint.
+* **apiKeyRef**: channels may reference a credential-service entry or environment variable by NAME instead of storing a plaintext `apiKey` in settings; keys resolve at call time. `GET /channels` keeps masking values; key preservation on save matches channels by identity, not position.
+* **Privacy & honesty**: `maskPII`, `stripEXIF`, `auditLog` and `consensusEnabled` settings are wired end-to-end; the previously decorative face-blur / NSFW / tiling toggles and no-op presets were removed.
+* **Native settingsScope Integration**: Settings UI binds directly to `ctx.settingsScope` (`namespace: 'dsh-vision-bridge'`), supporting reactive snapshot listeners and kernel state synchronization.
+
+---
+
 ## 📝 Changed in v0.5.30
 
 Security and honesty release. Additive summary of what changed for users:
@@ -201,11 +211,3 @@ Vision-first release: the bridge now serves chat models that see images natively
 ## 📄 License
 
 MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)
-
-### 15. 🛡️ Enterprise Security & Settings Governance (`v0.5.27`)
-* **Masked Secrets**: `GET /channels` automatically masks sensitive provider API keys (`sk-p...7890` or `********`) and reports `hasApiKey: true` to prevent secret leakage in browser DevTools/XHR. `POST /channels` preserves existing keys when a mask is submitted.
-* **CSRF & Origin Guard**: All mutating and cost-incurring endpoints (`/config`, `/channels`, `/upload-pdf`, `/test`, `/bench`, `/batch`, `DELETE /journal`, `DELETE /cache`, and `/doctor?probe=1`) validate `sec-fetch-site !== 'cross-site'` via `isTrustedSettingsRequest`, rejecting cross-origin attacks with `403 Forbidden`. The default `GET /doctor` report is static (no channel probes).
-* **SSRF fetch policy**: model-supplied image URLs are fetched only through `safeFetch` — non-http(s) schemes, localhost names and private/loopback/link-local hosts (incl. IPv4-mapped IPv6 and NAT64) are refused on every redirect hop; response bodies are capped. Use `allowedUrlHosts` to explicitly re-allow an internal endpoint.
-* **apiKeyRef**: channels may reference a credential-service entry or environment variable by NAME instead of storing a plaintext `apiKey` in settings; keys resolve at call time. `GET /channels` keeps masking values; key preservation on save matches channels by identity, not position.
-* **Privacy & honesty**: `maskPII`, `stripEXIF`, `auditLog` and `consensusEnabled` settings are wired end-to-end; the previously decorative face-blur / NSFW / tiling toggles and no-op presets were removed.
-* **Native settingsScope Integration**: Settings UI binds directly to `ctx.settingsScope` (`namespace: 'dsh-vision-bridge'`), supporting reactive snapshot listeners and kernel state synchronization.
