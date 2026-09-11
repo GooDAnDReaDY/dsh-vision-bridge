@@ -112,7 +112,7 @@
 - Как связываются коммиты с Gitea issues: footer `Refs: #<номер>`
 - Один завершённый логический результат = один commit: `да`
 - Текущая версия продукта: источник истины — `package.json`; релиз по явному «ок» владельца
-- Planned / active milestone: серия issues #197–#215 (ревью качества 2026-09-09); релиз после всех пачек
+- Planned / active milestone: релиз 0.5.33 (направление A эпика #241 влито в `main`); далее направления B/C/D эпика #241, из них B требует согласования зависимостей
 - Правило повышения `x.y.z`: обычный релиз меняет только `z`; переход `y` — только по явному согласованию пользователя
 
 ## Deployment
@@ -123,6 +123,13 @@
 - Штатный способ деплоя: установка опубликованной npm-версии в профиль `web` + `systemctl restart dsh-web`
 - Необходимые действия перед деплоем: обновить `minimumReleaseAgeExclude` в `pnpm-workspace.yaml` профиля
 - Проверки после деплоя: `systemctl is-active dsh-web`, `curl /doctor /stats /channels`, client.js 200
+
+## Dependency checks
+
+- Runtime-зависимостей нет (`dependencies: {}`), объявлены только peer-зависимости хоста DSH; `npx npm-check-updates` отвечает «No dependencies».
+- `npm audit` / `pnpm audit` **неприменимы намеренно**: `pnpm-lock.yaml` игнорируется `.gitignore`, lockfile в git не хранится, команды падают с `ENOLOCK` / `ERR_PNPM_AUDIT_NO_LOCKFILE` (issue #256).
+- Эквивалент проверки зависимостей для этого проекта: пустой `dependencies`, явный `files`-манифест пакета, разрешение peer-зависимостей и size guard в CI (`npm install`, `npm test`, `npm pack --dry-run`, лимит 262144 B на файл). Детали — в `index.md`, раздел «Зависимости и аудит».
+- Переход на вариант с коммитом lockfile и реальным `pnpm audit` — отдельная задача с согласованием владельца, а не побочный шаг другой работы.
 
 ## Known Issues And Limitations
 
