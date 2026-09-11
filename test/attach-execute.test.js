@@ -11,6 +11,7 @@ import { join } from 'node:path'
 import { setupWithAttachment, testConfig } from './harness.js'
 import { isBinaryAvailable } from '../lib/process.js'
 import { resolvedPathOf, registerAttachTools } from '../lib/tools/attach.js'
+import { FETCH_POLICY_CODE } from '../lib/vision-core.js'
 
 const PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
@@ -233,7 +234,7 @@ describe('#257 URL sources through the injected fetch seam', async () => {
     // safeFetch re-checks the policy on every hop; that error carries a code so
     // the tool cannot mistake it for a read failure and quietly skip the source.
     const defs = registerWith(async () => {
-      throw Object.assign(new Error('URL refused by fetch policy (#202): http://127.0.0.1/x.png'), { code: 'EFETCH_POLICY' })
+      throw Object.assign(new Error('URL refused by fetch policy (#202): http://127.0.0.1/x.png'), { code: FETCH_POLICY_CODE })
     })
     await assert.rejects(
       () => defs.get('vision_attach_images').execute({ urls: ['https://example.com/redirect.png'] }, undefined),
