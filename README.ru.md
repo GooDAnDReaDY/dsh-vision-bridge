@@ -119,6 +119,7 @@ dsh-vision-bridge:
   
   # Пропуск картинок для нативных vision-моделей ('prefer' | 'never' | 'always')
   nativePassthrough: prefer
+  hideRedundantTools: true   # скрывать компенсационные инструменты, если модель и так видит изображения
   
   # LRU-кэширование описаний
   cacheEnabled: true

@@ -93,7 +93,7 @@ export function createMockCtx(options = {}) {
       listProviders: () => [{ provider: 'prov' }],
       listConfigurableProviders: () => [],
       listModels: async () => [{ id: 'm1', name: 'mock-vision', inputModalities: ['text', 'image'] }],
-      resolveModelInfo: async () => ({ inputModalities: ['text'] }),
+      resolveModelInfo: async () => (options.modelInfo || { inputModalities: ['text'] }),
       stream: (opts) => {
         streams.push(opts)
         return (async function* () {
@@ -178,4 +178,25 @@ export function fakeReq({ method = 'GET', headers = {}, body = '', url = '/dsh-v
       if (event === 'end') cb()
     },
   }
+}
+
+/** #242: fake agent carrying a scoped tools.restrict() recorder. */
+export function fakeAgent({ provider = 'prov', model = 'm1', withRestrict = true } = {}) {
+  const restricted = []
+  const lifted = []
+  const scopedTools = withRestrict
+    ? {
+      restrict: (filter) => {
+        restricted.push(filter)
+        const dispose = () => lifted.push(filter)
+        return dispose
+      },
+    }
+    : {}
+  const agent = {
+    session: { requestHeader: () => ({ config: { provider, model } }) },
+    options: { provider, model },
+    ctx: { tools: scopedTools },
+  }
+  return { agent, restricted, lifted }
 }
