@@ -107,6 +107,8 @@ dsh-vision-bridge:
   timeoutMs: 120000
   channels: []
   channelFallback: sequential
+  hideRedundantTools: true   # 当聊天模型本身已能看图时隐藏桥接工具
+  attachMaxItems: 8          # 单次 attach 调用可发布的页面/帧/文件数
 ```
 
 ---

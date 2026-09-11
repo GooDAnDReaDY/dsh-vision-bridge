@@ -108,7 +108,7 @@ export function createMockCtx(options = {}) {
         ref: { mediaType: 'image/png' },
       }),
     },
-    get: (name) => ctx[name],
+    get: (name) => (name === 'fs' && options.fs ? options.fs : ctx[name]),
     on: (event, fn) => {
       if (!listeners.has(event)) listeners.set(event, [])
       listeners.get(event).push(fn)
