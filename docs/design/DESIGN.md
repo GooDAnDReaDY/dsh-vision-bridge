@@ -13,7 +13,12 @@
   - Карточка плагина в слоте `settings.plugin.item` (пространство `dsh-vision-bridge`, без верхнеуровневого `settings.section`).
   - Привязка к `ctx.settingsScope` (`namespace: 'dsh-vision-bridge'`).
 - **Инструменты агента (Tools)**:
-  - 30+ инструментов (`describe_image`, `vision_ocr`, `vision_extract_formula`, `vision_extract_table`, `vision_scan_barcode`, `vision_ui_flow` и др.).
+  - 30+ инструментов (мета-инструмент `vision_inspect`, `describe_image`, `vision_ocr`, `vision_extract_formula`, `vision_extract_table`, `vision_scan_barcode`, `vision_ui_flow` и др.).
+
+## 2.1 Архитектура модулей
+- **`lib/routes/*`**: доменные HTTP-роуты (`config.js`, `diagnostics.js`, `maintenance.js`, `media.js`) с изоляцией политик безопасности.
+- **`lib/tools/*`**: доменные регистраторы инструментов (`core.js`, `analysis.js`, `attach.js`, `document.js`, `grounding.js`, `media.js`, `ocr.js`).
+- **`lib/image-processing.js`**: смарт-оптимизация и пре-процессинг изображений (downscale, WebP/JPEG компрессия, EXIF stripping, deskew, enhance) для снижения задержек и экономии токенов.
 
 ## 3. Визуальное направление и стили
 - Нативный минималистичный UI, полностью повторяющий системные токены DSH (`--dsw-alias-*`).
