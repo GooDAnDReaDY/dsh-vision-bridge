@@ -22,6 +22,17 @@
   <a href="README.zh.md"><b>🇨🇳 中文说明</b></a>
 </p>
 
+<!-- 项目支持与反馈模块 -->
+<table align="center">
+  <tr>
+    <td align="center">
+      ⭐ <strong>如果您喜欢这个插件，请在 GitHub 上为它点亮 Star</strong> — 这能让我知道插件对您有用，并鼓励我继续开发和维护它。
+      <br><br>
+      🐛 <strong>如果您发现 Bug 或希望增加功能</strong>，请使用任意语言在 GitHub 上提交 Issue — 我会评估您的建议，并在后续版本中实现有价值的改进。
+    </td>
+  </tr>
+</table>
+
 </div>
 
 ---
@@ -175,7 +186,6 @@ dsh-vision-bridge:
 * **内部结构**：全部约 44 个工具注册迁移到 `lib/tools/*` 领域模块（core / grounding / ocr / document / analysis / media），依赖显式传递；`lib/index.js` 仍为主机入口。
 * **稳定性修复**：完成的批处理记录在 10 分钟轮询窗口后释放（修复内存增长）；`/upload-pdf` 拒绝超过新设置 `maxPdfBytes`（默认 20 MiB）的负载；`vision_memory_search` 按每个附件自身的描述评分；移除宿主死代码；日志标签一致化。
 * **设置**：新增 `maxPdfBytes`（上传硬上限）。
-
 
 ## 📝 v0.5.33 中的变更
 
