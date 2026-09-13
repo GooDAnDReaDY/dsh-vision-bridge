@@ -176,7 +176,7 @@ describe('route validation — /config POST allow-list', () => {
 describe('client i18n contract', () => {
   it('client registers namespace dsh-vision-bridge via ctx.locale.register', () => {
     const src = readFileSync(path.join(repoRoot, 'lib/client.js'), 'utf8');
-    assert.match(src, /ctx\.locale\.register\(NS,\s*\{\s*en\s*\}\)/);
+    assert.match(src, /ctx\.locale\.register\(NS,\s*\{\s*en(?:,\s*zh)?\s*\}\)/);
     assert.match(src, /NS\s*=\s*['"'"']dsh-vision-bridge['"'"']/);
   });
   it('client injects locale slot', () => {

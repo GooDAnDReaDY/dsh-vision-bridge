@@ -129,7 +129,7 @@ describe('#210 source language: no hardcoded Russian user-facing strings', () =>
     const src = clientSrc()
     assert.equal(src.includes('Конвертация'), false)
     assert.equal(src.includes('нажмите для переключения'), false)
-    assert.match(src, /ctx\.locale\.register\(NS, \{ en \}\)/)
+    assert.match(src, /ctx\.locale\.register\(NS, \{ en(?:, zh)? \}\)/)
   })
 })
 
