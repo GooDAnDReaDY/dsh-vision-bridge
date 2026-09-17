@@ -382,7 +382,7 @@ describe('free provider catalog', () => {
   it('index.js exports FREE_VISION_PROVIDERS info via /providers', async () => {
     // Just verify the module loads without error
     const mod = await import(path.join(repoRoot, 'lib/index.js'));
-    assert.ok(mod.name === 'dsh-vision-bridge');
+    assert.ok(mod.name === '@goodandready/dsh-vision-bridge');
   });
 });
 
@@ -429,7 +429,7 @@ describe('security functions', async () => {
 describe('ocr enhancements', () => {
   it('vision_ocr tool is registered with enhanced parameters', async () => {
     const mod = await import(path.join(repoRoot, 'lib/index.js'));
-    assert.ok(mod.name === 'dsh-vision-bridge');
+    assert.ok(mod.name === '@goodandready/dsh-vision-bridge');
   });
 });
 
