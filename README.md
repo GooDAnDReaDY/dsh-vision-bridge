@@ -219,6 +219,19 @@ Vision-first release: the bridge now serves chat models that see images natively
 
 ---
 
+## 📝 Changed in v0.6.0
+
+Major stability, reliability, and lifecycle release.
+
+* **In-App Auto-Updater**: added dedicated one-click update endpoint (`/api/dsh-vision-bridge/update`) and Settings card controls (`UpdaterBlock`) in `settings.plugin.item`. Features real-time npm version check, progress state, and restart guidance, protected by loopback and CSRF origin verification gates.
+* **Error Resilience & Catch Elimination**: audited and replaced all 76 unannotated empty catch blocks across core runtime and tools. Added `bestEffort(label, fn, fallback)` helper for non-fatal side effects, explicit warning propagation in image processing (`smartOptimizeImage` returns `preprocessed: boolean` and `warnings: string[]`), and transparent fallback reporting.
+* **Identity & Scope Integrity**: strictly aligned scoped package identity `@goodandready/dsh-vision-bridge` across manifest, Cordis patch, client module loader, and internal runtime metadata.
+* **Hardened Settings Security**: upgraded settings mutation route to a strict fail-closed validator (`isTrustedSettingsRequest`) enforcing loopback origin, CSRF header checks, bearer tokens, and rejecting suspicious remote headers.
+* **Native Theme Compliance**: client diagnostics and card styles fully migrated to DSH CSS design tokens (`--dsw-alias-*`), eliminating all hardcoded color literals.
+* **Sanitized Public Release**: integrated plumbing-based release script (`publish.sh`) and `.gitattributes` export filters ensuring zero private development artifacts in public distribution.
+
+---
+
 ## 📄 License
 
 MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)
