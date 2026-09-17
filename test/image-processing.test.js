@@ -25,4 +25,18 @@ describe('smartOptimizeImage pipeline', async () => {
     const res = await smartOptimizeImage(tinyPng, 'image/png', { stripExifFlag: true })
     assert.ok(Buffer.isBuffer(res.bytes))
   })
+
+  it('reports preprocessed status and warnings when degradation occurs (#314)', async () => {
+    // Calling with an invalid buffer that cannot be deskewed/enhanced/compressed
+    const badBuffer = Buffer.from('not-an-image-data')
+    const res = await smartOptimizeImage(badBuffer, 'image/png', {
+      stripExifFlag: true,
+      deskewFlag: true,
+      enhanceFlag: true,
+    })
+    assert.equal(res.preprocessed, false)
+    assert.ok(Array.isArray(res.warnings))
+    assert.ok(res.warnings.length > 0)
+    assert.deepEqual(res.bytes, badBuffer)
+  })
 })
