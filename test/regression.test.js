@@ -745,3 +745,51 @@ describe('group 16 async non-blocking execution and stubs cleanup (#195)', async
     assert.ok(!indexSrc.includes("spawnSync("), 'all spawnSync calls replaced with non-blocking async runner');
   });
 });
+
+// ── Group 17: Issue #314 Empty Catches & BestEffort ───────────
+describe('group 17 error resilience & bestEffort (#314)', async () => {
+  it('bestEffort executes sync function and returns result', async () => {
+    const { bestEffort } = await import('../lib/vision-core.js');
+    const res = bestEffort('test-sync', () => 42, 0);
+    assert.strictEqual(res, 42);
+  });
+
+  it('bestEffort catches sync throw and returns fallback', async () => {
+    const { bestEffort } = await import('../lib/vision-core.js');
+    const res = bestEffort('test-sync-err', () => { throw new Error('boom'); }, 99);
+    assert.strictEqual(res, 99);
+  });
+
+  it('bestEffort catches async rejection and returns fallback', async () => {
+    const { bestEffort } = await import('../lib/vision-core.js');
+    const res = await bestEffort('test-async-err', async () => { throw new Error('async-boom'); }, 'fallback-val');
+    assert.strictEqual(res, 'fallback-val');
+  });
+
+  it('verifies 0 unannotated empty catches in lib/', async () => {
+    const fsMod = await import('node:fs');
+    const pathMod = await import('node:path');
+    const libDir = pathMod.join(repoRoot, 'lib');
+    const jsFiles = [];
+    function scan(d) {
+      for (const entry of fsMod.readdirSync(d, { withFileTypes: true })) {
+        const full = pathMod.join(d, entry.name);
+        if (entry.isDirectory()) scan(full);
+        else if (entry.isFile() && entry.name.endsWith('.js')) jsFiles.push(full);
+      }
+    }
+    scan(libDir);
+    const emptyCatches = [];
+    const re = /catch\s*(\([^\)]*\))?\s*\{\s*\}/;
+    for (const file of jsFiles) {
+      const content = fsMod.readFileSync(file, 'utf8');
+      const lines = content.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        if (re.test(lines[i])) {
+          emptyCatches.push(`${pathMod.relative(repoRoot, file)}:${i + 1}`);
+        }
+      }
+    }
+    assert.strictEqual(emptyCatches.length, 0, `Found empty catches: ${emptyCatches.join(', ')}`);
+  });
+});
