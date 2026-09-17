@@ -32,3 +32,17 @@ pnpm-lock.yaml
 
 # build artifacts
 *.tgz
+
+# Internal development and deploy files
+AGENTS.md
+index.md
+deploy.sh
+publish.sh
+docs/adr/
+docs/architecture/
+docs/plans/
+docs/research/
+docs/superpowers/
+docs/testing/
+.gitea/
+.planning/

@@ -201,6 +201,19 @@ dsh-vision-bridge:
 
 ---
 
+## 📝 v0.6.0 中的变更
+
+重大稳定性、可靠性及生命周期升级版本。
+
+* **应用内一键自动更新**：新增专用更新端点（`/api/dsh-vision-bridge/update`）以及设置卡片中的控件（`settings.plugin.item` 中的 `UpdaterBlock`）。支持实时检查 npm 最新版本、显示更新状态和重启提示，并受到环回（loopback）与 CSRF 源验证的严格安全保护。
+* **错误韧性与消除空 catch**：全面审查并替换了核心运行时和所有工具中的全部 76 个未标注空 catch 块。引入 `bestEffort(label, fn, fallback)` 辅助函数用于安全的非关键副作用，并在图像预处理中显式传递降级告警（`smartOptimizeImage` 返回 `preprocessed: boolean` 和 `warnings: string[]`）。
+* **Scoped 作用域名称一致性**：在 `package.json`、Cordis 补丁、客户端模块加载器及内核元数据中统一保持 `@goodandready/dsh-vision-bridge`。
+* **加固设置安全校验**：设置保存路由升级为严格的 fail-closed 校验器（`isTrustedSettingsRequest`），强制校验环回来源、CSRF 头与 Bearer Token，并拒绝可疑的外部转发请求头。
+* **原生主题 CSS 变量支持**：客户端诊断和卡片样式完全迁移至 DSH 设计系统变量（`--dsw-alias-*`），移除了所有硬编码颜色值。
+* **净化的公开仓库发布流程**：集成基于 Git 底层命令的发布脚本（`publish.sh`）及 `.gitattributes` 导出过滤器，确保公开 GitHub 镜像和 npm 归档中不包含任何内部开发文件。
+
+---
+
 ## 📄 开源许可
 
 MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)

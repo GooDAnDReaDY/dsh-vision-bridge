@@ -382,7 +382,7 @@ describe('free provider catalog', () => {
   it('index.js exports FREE_VISION_PROVIDERS info via /providers', async () => {
     // Just verify the module loads without error
     const mod = await import(path.join(repoRoot, 'lib/index.js'));
-    assert.ok(mod.name === 'dsh-vision-bridge');
+    assert.ok(mod.name === '@goodandready/dsh-vision-bridge');
   });
 });
 
@@ -429,7 +429,7 @@ describe('security functions', async () => {
 describe('ocr enhancements', () => {
   it('vision_ocr tool is registered with enhanced parameters', async () => {
     const mod = await import(path.join(repoRoot, 'lib/index.js'));
-    assert.ok(mod.name === 'dsh-vision-bridge');
+    assert.ok(mod.name === '@goodandready/dsh-vision-bridge');
   });
 });
 
@@ -674,14 +674,19 @@ describe('group 14 client slots and composer controls', async () => {
 
 // ── Group 15: Security & Settings Audit Verification (#190, #191, #192) ──
 describe('group 15 security and settings audit (#190, #191, #192)', async () => {
-  it('checks isTrustedSettingsRequest helper (#192)', async () => {
+  it('checks isTrustedSettingsRequest helper (#192, #308)', async () => {
     const { isTrustedSettingsRequest } = await import('../lib/index.js');
     assert.strictEqual(typeof isTrustedSettingsRequest, 'function');
     assert.strictEqual(isTrustedSettingsRequest({ headers: { 'sec-fetch-site': 'cross-site' } }), false, 'rejects cross-site');
     assert.strictEqual(isTrustedSettingsRequest({ headers: { 'sec-fetch-site': 'same-origin' } }), true, 'accepts same-origin');
-    assert.strictEqual(isTrustedSettingsRequest({ headers: { 'sec-fetch-site': 'same-site' } }), true, 'accepts same-site');
-    assert.strictEqual(isTrustedSettingsRequest({ headers: { 'sec-fetch-site': 'none' } }), true, 'accepts none');
-    assert.strictEqual(isTrustedSettingsRequest({ headers: {} }), true, 'accepts missing header for same-host curls');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: { 'sec-fetch-site': 'same-site' } }), false, 'rejects same-site without loopback');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: { 'sec-fetch-site': 'none' } }), false, 'rejects none without loopback');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: {} }), false, 'rejects missing header without loopback');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: {}, socket: { remoteAddress: '127.0.0.1' } }), true, 'accepts loopback socket');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: {}, socket: { remoteAddress: '192.168.1.150' } }), false, 'rejects external ip');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: { authorization: 'Bearer valid-token-12345' } }), true, 'accepts bearer token');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: { cookie: 'token=xyz' } }), true, 'accepts auth cookie');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: { origin: 'http://malicious.com', host: '127.0.0.1:3080' }, socket: { remoteAddress: '127.0.0.1' } }), false, 'rejects mismatched origin');
     assert.strictEqual(isTrustedSettingsRequest(null), false, 'rejects null request');
   });
 
@@ -738,5 +743,162 @@ describe('group 16 async non-blocking execution and stubs cleanup (#195)', async
     assert.ok(!indexSrc.includes("name: 'vision_browser_click'"), 'vision_browser_click stub removed');
     assert.ok(!indexSrc.includes("name: 'vision_browser_navigate'"), 'vision_browser_navigate stub removed');
     assert.ok(!indexSrc.includes("spawnSync("), 'all spawnSync calls replaced with non-blocking async runner');
+  });
+});
+
+// ── Group 17: Issue #314 Empty Catches & BestEffort ───────────
+describe('group 17 error resilience & bestEffort (#314)', async () => {
+  it('bestEffort executes sync function and returns result', async () => {
+    const { bestEffort } = await import('../lib/vision-core.js');
+    const res = bestEffort('test-sync', () => 42, 0);
+    assert.strictEqual(res, 42);
+  });
+
+  it('bestEffort catches sync throw and returns fallback', async () => {
+    const { bestEffort } = await import('../lib/vision-core.js');
+    const res = bestEffort('test-sync-err', () => { throw new Error('boom'); }, 99);
+    assert.strictEqual(res, 99);
+  });
+
+  it('bestEffort catches async rejection and returns fallback', async () => {
+    const { bestEffort } = await import('../lib/vision-core.js');
+    const res = await bestEffort('test-async-err', async () => { throw new Error('async-boom'); }, 'fallback-val');
+    assert.strictEqual(res, 'fallback-val');
+  });
+
+  it('verifies 0 unannotated empty catches in lib/', async () => {
+    const fsMod = await import('node:fs');
+    const pathMod = await import('node:path');
+    const libDir = pathMod.join(repoRoot, 'lib');
+    const jsFiles = [];
+    function scan(d) {
+      for (const entry of fsMod.readdirSync(d, { withFileTypes: true })) {
+        const full = pathMod.join(d, entry.name);
+        if (entry.isDirectory()) scan(full);
+        else if (entry.isFile() && entry.name.endsWith('.js')) jsFiles.push(full);
+      }
+    }
+    scan(libDir);
+    const emptyCatches = [];
+    const re = /catch\s*(\([^\)]*\))?\s*\{\s*\}/;
+    for (const file of jsFiles) {
+      const content = fsMod.readFileSync(file, 'utf8');
+      const lines = content.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        if (re.test(lines[i])) {
+          emptyCatches.push(`${pathMod.relative(repoRoot, file)}:${i + 1}`);
+        }
+      }
+    }
+    assert.strictEqual(emptyCatches.length, 0, `Found empty catches: ${emptyCatches.join(', ')}`);
+  });
+});
+
+// ── Group 18: Issue #311 Codebase i18n & Cyrillic Audit ───────────
+describe('group 18 source language audit and data heuristics (#311)', async () => {
+  it('checks that lib/ contains no Cyrillic in comments or UI, with exception for input parsing regex data', async () => {
+    const fsMod = await import('node:fs');
+    const pathMod = await import('node:path');
+    const libDir = pathMod.join(repoRoot, 'lib');
+    const jsFiles = [];
+    function scan(d) {
+      for (const entry of fsMod.readdirSync(d, { withFileTypes: true })) {
+        const full = pathMod.join(d, entry.name);
+        if (entry.isDirectory()) scan(full);
+        else if (entry.isFile() && entry.name.endsWith('.js')) jsFiles.push(full);
+      }
+    }
+    scan(libDir);
+
+    const unexpectedCyrillic = [];
+    const cyrillicRe = /[\u0400-\u04FF]/;
+    for (const file of jsFiles) {
+      const rel = pathMod.relative(repoRoot, file);
+      const lines = fsMod.readFileSync(file, 'utf8').split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (cyrillicRe.test(line)) {
+          // Documented exception in DESIGN.md §12: genericQuestion heuristic in lib/index.js
+          if (rel === 'lib/index.js' && line.includes('genericQuestion')) {
+            continue;
+          }
+          unexpectedCyrillic.push(`${rel}:${i + 1}: ${line.trim()}`);
+        }
+      }
+    }
+    assert.strictEqual(unexpectedCyrillic.length, 0, `Found unexpected Cyrillic: ${unexpectedCyrillic.join('; ')}`);
+  });
+});
+
+// ── Group 19: Issue #312 Web UI Color Tokens & Theming ───────────
+describe('group 19 web ui theme tokens (#312)', async () => {
+  it('checks that lib/client.js contains no standalone rgba() or hardcoded hex colors in styles', async () => {
+    const fsMod = await import('node:fs');
+    const pathMod = await import('node:path');
+    const clientPath = pathMod.join(repoRoot, 'lib/client.js');
+    const clientSrc = fsMod.readFileSync(clientPath, 'utf8');
+
+    // No rgba(
+    const rgbaMatches = clientSrc.match(/rgba\([^)]+\)/g) || [];
+    assert.strictEqual(rgbaMatches.length, 0, `Found rgba() in client.js: ${rgbaMatches.join(', ')}`);
+
+    // No hardcoded hex color values in style tags/rules (excluding comments)
+    const lines = clientSrc.split('\n');
+    const rawHex = [];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.startsWith('//') || line.startsWith('/*') || line.startsWith('*')) continue;
+      // Match #hex inside CSS or styles: e.g. :#6366f1, #fff
+      const m = line.match(/(#[0-9a-fA-F]{3,6})\b/g);
+      if (m) {
+        rawHex.push(`line ${i + 1}: ${m.join(', ')}`);
+      }
+    }
+    assert.strictEqual(rawHex.length, 0, `Found raw hex in client.js: ${rawHex.join('; ')}`);
+  });
+});
+
+// ── Group 20: Issue #310 Repository Hygiene & Sanitization ───────────
+describe('group 20 repository hygiene and publication sanitization (#310)', async () => {
+  it('checks that internal files are not tracked in git index', async () => {
+    const { execSync } = await import('node:child_process');
+    try {
+      const tracked = execSync('git ls-files', { cwd: repoRoot, encoding: 'utf8' })
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean);
+
+      const forbidden = [
+        'AGENTS.md',
+        'index.md',
+        'deploy.sh',
+        'publish.sh',
+        '.gitea/workflows/test.yml',
+      ];
+      for (const f of forbidden) {
+        assert.ok(!tracked.includes(f), `Forbidden file tracked in git: ${f}`);
+      }
+
+      // In docs/, only docs/design/DESIGN.md must be tracked
+      const trackedDocs = tracked.filter((f) => f.startsWith('docs/'));
+      assert.deepEqual(trackedDocs, ['docs/design/DESIGN.md'], 'Only docs/design/DESIGN.md must be tracked in docs/');
+    } catch (err) {
+      if (err.message && err.message.includes('not a git repository')) return;
+      throw err;
+    }
+  });
+
+  it('checks that .gitattributes and .gitignore configure publication exclusions', async () => {
+    const fsMod = await import('node:fs');
+    const pathMod = await import('node:path');
+    const attrs = fsMod.readFileSync(pathMod.join(repoRoot, '.gitattributes'), 'utf8');
+    assert.match(attrs, /AGENTS\.md\s+export-ignore/);
+    assert.match(attrs, /index\.md\s+export-ignore/);
+    assert.match(attrs, /docs\/plans\/\s+export-ignore/);
+
+    const gitignore = fsMod.readFileSync(pathMod.join(repoRoot, '.gitignore'), 'utf8');
+    assert.match(gitignore, /AGENTS\.md/);
+    assert.match(gitignore, /index\.md/);
+    assert.match(gitignore, /deploy\.sh/);
   });
 });
