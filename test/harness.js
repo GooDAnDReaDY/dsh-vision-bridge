@@ -164,11 +164,12 @@ export function fakeRes() {
 }
 
 /** req double that answers readBody()-style on('data'/'end') handlers. */
-export function fakeReq({ method = 'GET', headers = {}, body = '', url = '/dsh-vision-bridge/x' } = {}) {
+export function fakeReq({ method = 'GET', headers = {}, body = '', url = '/dsh-vision-bridge/x', socket = { remoteAddress: '127.0.0.1' } } = {}) {
   return {
     method,
     headers,
     url,
+    socket,
     // async-iterable body for handlers that read `for await (const c of req)`
     async *[Symbol.asyncIterator]() {
       if (body) yield Buffer.from(body)
