@@ -793,3 +793,67 @@ describe('group 17 error resilience & bestEffort (#314)', async () => {
     assert.strictEqual(emptyCatches.length, 0, `Found empty catches: ${emptyCatches.join(', ')}`);
   });
 });
+
+// ── Group 18: Issue #311 Codebase i18n & Cyrillic Audit ───────────
+describe('group 18 source language audit and data heuristics (#311)', async () => {
+  it('checks that lib/ contains no Cyrillic in comments or UI, with exception for input parsing regex data', async () => {
+    const fsMod = await import('node:fs');
+    const pathMod = await import('node:path');
+    const libDir = pathMod.join(repoRoot, 'lib');
+    const jsFiles = [];
+    function scan(d) {
+      for (const entry of fsMod.readdirSync(d, { withFileTypes: true })) {
+        const full = pathMod.join(d, entry.name);
+        if (entry.isDirectory()) scan(full);
+        else if (entry.isFile() && entry.name.endsWith('.js')) jsFiles.push(full);
+      }
+    }
+    scan(libDir);
+
+    const unexpectedCyrillic = [];
+    const cyrillicRe = /[\u0400-\u04FF]/;
+    for (const file of jsFiles) {
+      const rel = pathMod.relative(repoRoot, file);
+      const lines = fsMod.readFileSync(file, 'utf8').split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (cyrillicRe.test(line)) {
+          // Documented exception in DESIGN.md §12: genericQuestion heuristic in lib/index.js
+          if (rel === 'lib/index.js' && line.includes('genericQuestion')) {
+            continue;
+          }
+          unexpectedCyrillic.push(`${rel}:${i + 1}: ${line.trim()}`);
+        }
+      }
+    }
+    assert.strictEqual(unexpectedCyrillic.length, 0, `Found unexpected Cyrillic: ${unexpectedCyrillic.join('; ')}`);
+  });
+});
+
+// ── Group 19: Issue #312 Web UI Color Tokens & Theming ───────────
+describe('group 19 web ui theme tokens (#312)', async () => {
+  it('checks that lib/client.js contains no standalone rgba() or hardcoded hex colors in styles', async () => {
+    const fsMod = await import('node:fs');
+    const pathMod = await import('node:path');
+    const clientPath = pathMod.join(repoRoot, 'lib/client.js');
+    const clientSrc = fsMod.readFileSync(clientPath, 'utf8');
+
+    // No rgba(
+    const rgbaMatches = clientSrc.match(/rgba\([^)]+\)/g) || [];
+    assert.strictEqual(rgbaMatches.length, 0, `Found rgba() in client.js: ${rgbaMatches.join(', ')}`);
+
+    // No hardcoded hex color values in style tags/rules (excluding comments)
+    const lines = clientSrc.split('\n');
+    const rawHex = [];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.startsWith('//') || line.startsWith('/*') || line.startsWith('*')) continue;
+      // Match #hex inside CSS or styles: e.g. :#6366f1, #fff
+      const m = line.match(/(#[0-9a-fA-F]{3,6})\b/g);
+      if (m) {
+        rawHex.push(`line ${i + 1}: ${m.join(', ')}`);
+      }
+    }
+    assert.strictEqual(rawHex.length, 0, `Found raw hex in client.js: ${rawHex.join('; ')}`);
+  });
+});
