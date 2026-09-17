@@ -147,4 +147,13 @@ describe('plugin updater — route integration (#309)', async () => {
     const errData = JSON.parse(responseBody)
     assert.ok(errData.error.includes('Rejected'))
   })
+
+  it('installExact never uses --config.minimumReleaseAge=0 or quarantine bypass flags (#322)', async () => {
+    const { readFileSync } = await import('node:fs')
+    const { fileURLToPath } = await import('node:url')
+    const filePath = fileURLToPath(new URL('../lib/updater.js', import.meta.url))
+    const updaterCode = readFileSync(filePath, 'utf8')
+    assert.ok(!updaterCode.includes('minimumReleaseAge=0'), 'must not bypass minimumReleaseAge')
+    assert.ok(!updaterCode.includes('--config.minimumReleaseAge'), 'must not pass config.minimumReleaseAge')
+  })
 })

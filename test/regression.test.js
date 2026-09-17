@@ -873,15 +873,14 @@ describe('group 20 repository hygiene and publication sanitization (#310)', asyn
         'index.md',
         'deploy.sh',
         'publish.sh',
-        '.gitea/workflows/test.yml',
       ];
       for (const f of forbidden) {
         assert.ok(!tracked.includes(f), `Forbidden file tracked in git: ${f}`);
       }
 
-      // In docs/, only docs/design/DESIGN.md must be tracked
+      // docs/ must never be tracked in git index (#324)
       const trackedDocs = tracked.filter((f) => f.startsWith('docs/'));
-      assert.deepEqual(trackedDocs, ['docs/design/DESIGN.md'], 'Only docs/design/DESIGN.md must be tracked in docs/');
+      assert.deepEqual(trackedDocs, [], 'No files from docs/ must be tracked in git');
     } catch (err) {
       if (err.message && err.message.includes('not a git repository')) return;
       throw err;
@@ -894,11 +893,12 @@ describe('group 20 repository hygiene and publication sanitization (#310)', asyn
     const attrs = fsMod.readFileSync(pathMod.join(repoRoot, '.gitattributes'), 'utf8');
     assert.match(attrs, /AGENTS\.md\s+export-ignore/);
     assert.match(attrs, /index\.md\s+export-ignore/);
-    assert.match(attrs, /docs\/plans\/\s+export-ignore/);
+    assert.match(attrs, /docs\/\s+export-ignore/);
 
     const gitignore = fsMod.readFileSync(pathMod.join(repoRoot, '.gitignore'), 'utf8');
     assert.match(gitignore, /AGENTS\.md/);
     assert.match(gitignore, /index\.md/);
     assert.match(gitignore, /deploy\.sh/);
+    assert.match(gitignore, /docs\//);
   });
 });

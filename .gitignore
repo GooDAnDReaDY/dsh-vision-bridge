@@ -38,11 +38,5 @@ AGENTS.md
 index.md
 deploy.sh
 publish.sh
-docs/adr/
-docs/architecture/
-docs/plans/
-docs/research/
-docs/superpowers/
-docs/testing/
-.gitea/
+docs/
 .planning/
