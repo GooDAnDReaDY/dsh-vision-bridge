@@ -214,6 +214,18 @@ dsh-vision-bridge:
 
 ---
 
+## 📝 v0.6.1 中的变更
+
+质量保障、测试覆盖率扩充与 pnpm 规范兼容性升级版本。
+
+* **兼容 pnpm 安全隔离期**：在应用内更新器中移除了 `--config.minimumReleaseAge=0` 强制绕过参数，严格遵循 pnpm 官方包发布隔离期安全策略与标准缓存解析。
+* **遗留领域工具执行全覆盖**：为图像处理遗留工具（`annotate_image`、`extract_ui_boxes`、`compare_images`、`crop_image`、`rotate_image`、`apply_image_filter`、`read_qr_barcode`、`generate_qr_code`）补充了完整的端到端执行测试，全工具领域覆盖率均达到 $\ge 75\%$（共 319 项测试全部通过）。
+* **DOM 与 React 生命周期测试**：新增设置卡片组件单元测试套件（`test/card-dom.test.js`），模拟 React DOM 挂载、通道状态管理与 Error Boundary 容错机制。
+* **修复运行时引用**：修复 `lib/index.js` 中 `parseBbox` 遗漏导入 `bestEffort` 辅助函数的隐式缺陷。
+* **净化公开仓库与导出目录**：从 Git 索引及公开镜像中严格隔离 `docs/` 及内部研发工程资产，保持发布物干净整洁。
+
+---
+
 ## 📄 开源许可
 
 MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)
