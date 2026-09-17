@@ -857,3 +857,48 @@ describe('group 19 web ui theme tokens (#312)', async () => {
     assert.strictEqual(rawHex.length, 0, `Found raw hex in client.js: ${rawHex.join('; ')}`);
   });
 });
+
+// ── Group 20: Issue #310 Repository Hygiene & Sanitization ───────────
+describe('group 20 repository hygiene and publication sanitization (#310)', async () => {
+  it('checks that internal files are not tracked in git index', async () => {
+    const { execSync } = await import('node:child_process');
+    try {
+      const tracked = execSync('git ls-files', { cwd: repoRoot, encoding: 'utf8' })
+        .split('\n')
+        .map((l) => l.trim())
+        .filter(Boolean);
+
+      const forbidden = [
+        'AGENTS.md',
+        'index.md',
+        'deploy.sh',
+        'publish.sh',
+        '.gitea/workflows/test.yml',
+      ];
+      for (const f of forbidden) {
+        assert.ok(!tracked.includes(f), `Forbidden file tracked in git: ${f}`);
+      }
+
+      // In docs/, only docs/design/DESIGN.md must be tracked
+      const trackedDocs = tracked.filter((f) => f.startsWith('docs/'));
+      assert.deepEqual(trackedDocs, ['docs/design/DESIGN.md'], 'Only docs/design/DESIGN.md must be tracked in docs/');
+    } catch (err) {
+      if (err.message && err.message.includes('not a git repository')) return;
+      throw err;
+    }
+  });
+
+  it('checks that .gitattributes and .gitignore configure publication exclusions', async () => {
+    const fsMod = await import('node:fs');
+    const pathMod = await import('node:path');
+    const attrs = fsMod.readFileSync(pathMod.join(repoRoot, '.gitattributes'), 'utf8');
+    assert.match(attrs, /AGENTS\.md\s+export-ignore/);
+    assert.match(attrs, /index\.md\s+export-ignore/);
+    assert.match(attrs, /docs\/plans\/\s+export-ignore/);
+
+    const gitignore = fsMod.readFileSync(pathMod.join(repoRoot, '.gitignore'), 'utf8');
+    assert.match(gitignore, /AGENTS\.md/);
+    assert.match(gitignore, /index\.md/);
+    assert.match(gitignore, /deploy\.sh/);
+  });
+});
