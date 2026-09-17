@@ -829,3 +829,31 @@ describe('group 18 source language audit and data heuristics (#311)', async () =
     assert.strictEqual(unexpectedCyrillic.length, 0, `Found unexpected Cyrillic: ${unexpectedCyrillic.join('; ')}`);
   });
 });
+
+// ── Group 19: Issue #312 Web UI Color Tokens & Theming ───────────
+describe('group 19 web ui theme tokens (#312)', async () => {
+  it('checks that lib/client.js contains no standalone rgba() or hardcoded hex colors in styles', async () => {
+    const fsMod = await import('node:fs');
+    const pathMod = await import('node:path');
+    const clientPath = pathMod.join(repoRoot, 'lib/client.js');
+    const clientSrc = fsMod.readFileSync(clientPath, 'utf8');
+
+    // No rgba(
+    const rgbaMatches = clientSrc.match(/rgba\([^)]+\)/g) || [];
+    assert.strictEqual(rgbaMatches.length, 0, `Found rgba() in client.js: ${rgbaMatches.join(', ')}`);
+
+    // No hardcoded hex color values in style tags/rules (excluding comments)
+    const lines = clientSrc.split('\n');
+    const rawHex = [];
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line.startsWith('//') || line.startsWith('/*') || line.startsWith('*')) continue;
+      // Match #hex inside CSS or styles: e.g. :#6366f1, #fff
+      const m = line.match(/(#[0-9a-fA-F]{3,6})\b/g);
+      if (m) {
+        rawHex.push(`line ${i + 1}: ${m.join(', ')}`);
+      }
+    }
+    assert.strictEqual(rawHex.length, 0, `Found raw hex in client.js: ${rawHex.join('; ')}`);
+  });
+});
