@@ -1,0 +1,16 @@
+# Publication layer: paths that never enter the public tree.
+# `git archive` honours export-ignore, and publish.sh uses the same list
+# with git plumbing commands, so the sanitised tree is reproducible from main.
+AGENTS.md             export-ignore
+index.md              export-ignore
+deploy.sh             export-ignore
+publish.sh            export-ignore
+docs/adr/             export-ignore
+docs/architecture/    export-ignore
+docs/plans/           export-ignore
+docs/research/        export-ignore
+docs/superpowers/     export-ignore
+docs/testing/         export-ignore
+.gitea/               export-ignore
+.planning/            export-ignore
+.worktrees/           export-ignore
