@@ -793,3 +793,39 @@ describe('group 17 error resilience & bestEffort (#314)', async () => {
     assert.strictEqual(emptyCatches.length, 0, `Found empty catches: ${emptyCatches.join(', ')}`);
   });
 });
+
+// ── Group 18: Issue #311 Codebase i18n & Cyrillic Audit ───────────
+describe('group 18 source language audit and data heuristics (#311)', async () => {
+  it('checks that lib/ contains no Cyrillic in comments or UI, with exception for input parsing regex data', async () => {
+    const fsMod = await import('node:fs');
+    const pathMod = await import('node:path');
+    const libDir = pathMod.join(repoRoot, 'lib');
+    const jsFiles = [];
+    function scan(d) {
+      for (const entry of fsMod.readdirSync(d, { withFileTypes: true })) {
+        const full = pathMod.join(d, entry.name);
+        if (entry.isDirectory()) scan(full);
+        else if (entry.isFile() && entry.name.endsWith('.js')) jsFiles.push(full);
+      }
+    }
+    scan(libDir);
+
+    const unexpectedCyrillic = [];
+    const cyrillicRe = /[\u0400-\u04FF]/;
+    for (const file of jsFiles) {
+      const rel = pathMod.relative(repoRoot, file);
+      const lines = fsMod.readFileSync(file, 'utf8').split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        if (cyrillicRe.test(line)) {
+          // Documented exception in DESIGN.md §12: genericQuestion heuristic in lib/index.js
+          if (rel === 'lib/index.js' && line.includes('genericQuestion')) {
+            continue;
+          }
+          unexpectedCyrillic.push(`${rel}:${i + 1}: ${line.trim()}`);
+        }
+      }
+    }
+    assert.strictEqual(unexpectedCyrillic.length, 0, `Found unexpected Cyrillic: ${unexpectedCyrillic.join('; ')}`);
+  });
+});
