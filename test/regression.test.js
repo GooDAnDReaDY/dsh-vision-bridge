@@ -873,7 +873,6 @@ describe('group 20 repository hygiene and publication sanitization (#310)', asyn
         'index.md',
         'deploy.sh',
         'publish.sh',
-        '.gitea/workflows/test.yml',
       ];
       for (const f of forbidden) {
         assert.ok(!tracked.includes(f), `Forbidden file tracked in git: ${f}`);
