@@ -33,10 +33,12 @@
 - Удалены как декоративные: blurFaces, nsfwFilter, tileLargeImages/tileThreshold, пресеты Local/Cloud/LM Studio (делали ничего). Пустые строки-заглушки от этих переключателей убраны из карточки (#269) — они давали лишние отступы.
 - Исходный язык интерфейса — английский; ручной ru-дубль в плагине отсутствует (ru даёт translation-плагин). Пресеты/тосты/тултипы переведены в EN-ключи.
 - Секретные ключи API никогда не возвращаются в открытом виде в браузер через GET-запросы.
-- Мутирующие запросы защищены гардом `isTrustedSettingsRequest` (`sec-fetch-site !== 'cross-site'`).
+- Мутирующие запросы и чувствительные маршруты (config, diagnostics, maintenance, media) защищены строгим гардом `isTrustedSettingsRequest` (fail-closed: проверка loopback-сокета 127.0.0.1/::1, сверка origin/host от CSRF, поддержка Bearer auth и auth cookie, блокировка cross-site и внешних запросов без доверенного контекста; Refs: #308).
 - Временные файлы в `/tmp` гарантированно очищаются в блоке `finally`.
 
-## 5. Security notes (batch 2, #200-#211)
+## 5. Security notes (batch 2, #200-#211, #308)
+
+- **Route Security Policy (#308)**: маршруты настроек (`/config`), диагностики (`/doctor?probe=1`), обслуживания (`/batch`, `/journal`, `/cache`) и медиа защищены `isTrustedSettingsRequest`. Доступ разрешен только доверенным браузерным запросам (`sec-fetch-site: same-origin`), аутентифицированным сессиям (`Authorization: Bearer` или cookie с токеном), либо локальным вызовам (loopback socket: `127.0.0.1`, `::1`). Запросы с несовпадающим `origin`/`host` и внешние неаутентифицированные запросы отклоняются с кодом 403. Все write-маршруты строго ограничены методами (недопустимые методы возвращают 405). Ключи провайдеров маскируются на выходе и никогда не пишутся в журнал.
 
 - Серверный fetch URL-источников (`describe_image` urls, `inspect_image`,
   `resolveSourceBytes`) идёт только через `safeFetch`: политика применяется к

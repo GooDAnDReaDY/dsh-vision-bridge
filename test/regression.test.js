@@ -674,14 +674,19 @@ describe('group 14 client slots and composer controls', async () => {
 
 // ── Group 15: Security & Settings Audit Verification (#190, #191, #192) ──
 describe('group 15 security and settings audit (#190, #191, #192)', async () => {
-  it('checks isTrustedSettingsRequest helper (#192)', async () => {
+  it('checks isTrustedSettingsRequest helper (#192, #308)', async () => {
     const { isTrustedSettingsRequest } = await import('../lib/index.js');
     assert.strictEqual(typeof isTrustedSettingsRequest, 'function');
     assert.strictEqual(isTrustedSettingsRequest({ headers: { 'sec-fetch-site': 'cross-site' } }), false, 'rejects cross-site');
     assert.strictEqual(isTrustedSettingsRequest({ headers: { 'sec-fetch-site': 'same-origin' } }), true, 'accepts same-origin');
-    assert.strictEqual(isTrustedSettingsRequest({ headers: { 'sec-fetch-site': 'same-site' } }), true, 'accepts same-site');
-    assert.strictEqual(isTrustedSettingsRequest({ headers: { 'sec-fetch-site': 'none' } }), true, 'accepts none');
-    assert.strictEqual(isTrustedSettingsRequest({ headers: {} }), true, 'accepts missing header for same-host curls');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: { 'sec-fetch-site': 'same-site' } }), false, 'rejects same-site without loopback');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: { 'sec-fetch-site': 'none' } }), false, 'rejects none without loopback');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: {} }), false, 'rejects missing header without loopback');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: {}, socket: { remoteAddress: '127.0.0.1' } }), true, 'accepts loopback socket');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: {}, socket: { remoteAddress: '192.168.1.150' } }), false, 'rejects external ip');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: { authorization: 'Bearer valid-token-12345' } }), true, 'accepts bearer token');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: { cookie: 'token=xyz' } }), true, 'accepts auth cookie');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: { origin: 'http://malicious.com', host: '127.0.0.1:3080' }, socket: { remoteAddress: '127.0.0.1' } }), false, 'rejects mismatched origin');
     assert.strictEqual(isTrustedSettingsRequest(null), false, 'rejects null request');
   });
 
