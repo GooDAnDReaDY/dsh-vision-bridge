@@ -232,6 +232,18 @@ Major stability, reliability, and lifecycle release.
 
 ---
 
+## 📝 Changed in v0.6.1
+
+Quality, test coverage expansion, and pnpm compliance release.
+
+* **pnpm Quarantine Compliance**: removed `--config.minimumReleaseAge=0` override flag in the in-app updater, ensuring full compatibility with pnpm package quarantine policies and default cache resolution.
+* **Legacy Domain Tool Coverage**: added comprehensive execution pathway tests for legacy image processing tools (`annotate_image`, `extract_ui_boxes`, `compare_images`, `crop_image`, `rotate_image`, `apply_image_filter`, `read_qr_barcode`, `generate_qr_code`), achieving $\ge 75\%$ coverage across all domains and 319 passing tests.
+* **DOM & React Lifecycle Testing**: added dedicated fiber-like React DOM unit test suite (`test/card-dom.test.js`) verifying Settings card rendering, channel management, state transitions, and error boundary resilience.
+* **Runtime Import Fix**: resolved missing `bestEffort` import in `lib/index.js` for `parseBbox`.
+* **Clean Tree & Artifact Hygiene**: sanitized repository index and public mirrors by strictly isolating `docs/` and internal engineering assets.
+
+---
+
 ## 📄 License
 
 MIT © [GooDAnDReaDY](https://github.com/GooDAnDReaDY)
