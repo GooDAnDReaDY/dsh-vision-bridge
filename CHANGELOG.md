@@ -2,6 +2,11 @@
 
 Notable changes to `@goodandready/dsh-vision-bridge`.
 
+## 0.6.5
+
+### Fixed
+- Settings no longer wait on the removed settingsScope service. The client uses configForms (#350).
+
 ## 0.6.4
 
 ### Fixed
