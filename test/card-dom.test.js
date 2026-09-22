@@ -5,10 +5,10 @@
 // 2. VisionCard component rendering, toggle state, and channel health badge.
 // 3. VisionSection component lifecycle:
 //    - load() fetches config, models, channels, and stats.
-//    - reactive binding with settingsScope (#191).
+//    - reactive binding with configForms (#191).
 //    - dirty tracking on field changes.
 //    - save() validation gates (#288): attachMaxItems range, provider/model pair.
-//    - save() success updates settingsScope.update() and clears dirty flag.
+//    - save() success updates configForms.update() and clears dirty flag.
 //    - save() handles API error gracefully without throwing.
 //    - reset() restores defaults.
 //    - runTest() executes /dsh-vision-bridge/test and sets testResult.
@@ -244,8 +244,7 @@ describe('#290 DOM & React tests for settings card', () => {
         getSnapshot() { return { active: 'en' } },
         subscribe() { return () => {} },
       },
-      settingsScope: {
-        bind() {
+      configForms: { get() {
           return {
             getSnapshot() { return { value: {} } },
             subscribe() { return () => {} },
@@ -295,8 +294,7 @@ describe('#290 DOM & React tests for settings card', () => {
         getSnapshot() { return { active: 'en' } },
         subscribe() { return () => {} },
       },
-      settingsScope: {
-        bind() {
+      configForms: { get() {
           return {
             getSnapshot() { return { value: {} } },
             subscribe() { return () => {} },
@@ -318,7 +316,7 @@ describe('#290 DOM & React tests for settings card', () => {
     assert.ok(channelsFetchCalled, 'Initial /channels probe was fetched')
   })
 
-  it('executes VisionSection lifecycle: load, buttons, dirty tracking, save, and settingsScope.update (#191, #288)', async () => {
+  it('executes VisionSection lifecycle: load, buttons, dirty tracking, save, and configForms.update (#191, #288)', async () => {
     let savedConfig = null
     let scopeUpdatedWith = null
     let testRouteCalled = false
@@ -394,8 +392,7 @@ describe('#290 DOM & React tests for settings card', () => {
         getSnapshot() { return { active: 'en' } },
         subscribe() { return () => {} },
       },
-      settingsScope: {
-        bind({ namespace }) {
+      configForms: { get(namespace) {
           assert.equal(namespace, 'dsh-vision-bridge')
           return {
             getSnapshot() { return { value: initialConfig } },
@@ -448,7 +445,7 @@ describe('#290 DOM & React tests for settings card', () => {
 
     await saveBtn.props.onClick()
     assert.ok(savedConfig, 'save button triggered POST to /config')
-    assert.ok(scopeUpdatedWith, 'save button updated settingsScope')
+    assert.ok(scopeUpdatedWith, 'save button updated configForms')
     assert.equal(scopeUpdatedWith.mode, 'hybrid')
   })
 
@@ -474,8 +471,7 @@ describe('#290 DOM & React tests for settings card', () => {
         getSnapshot() { return { active: 'en' } },
         subscribe() { return () => {} },
       },
-      settingsScope: {
-        bind() {
+      configForms: { get() {
           return {
             getSnapshot() { return { value: {} } },
             subscribe() { return () => {} },
@@ -519,8 +515,7 @@ describe('#290 DOM & React tests for settings card', () => {
         getSnapshot() { return { active: 'en' } },
         subscribe() { return () => {} },
       },
-      settingsScope: {
-        bind() {
+      configForms: { get() {
           return {
             getSnapshot() { return { value: {} } },
             subscribe() { return () => {} },
@@ -554,8 +549,7 @@ describe('#290 DOM & React tests for settings card', () => {
         getSnapshot() { return { active: 'en' } },
         subscribe() { return () => {} },
       },
-      settingsScope: {
-        bind() {
+      configForms: { get() {
           return {
             getSnapshot() { return { value: {} } },
             subscribe() { return () => {} },

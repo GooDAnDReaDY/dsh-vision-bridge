@@ -75,7 +75,7 @@ export function createMockCtx(options = {}) {
 
   // Mirror production semantics: scope.get() returns the merged values
   // (defaults from the base config included).
-  const settingsScope = {
+  const configForms = {
     get: () => config,
     update: async (patch) => { Object.assign(config, patch) },
     unset: async (key) => { delete config[key] },
@@ -132,7 +132,7 @@ export function createMockCtx(options = {}) {
       },
     },
     settings: {
-      register: (_ns, _schema, _opts) => settingsScope,
+      register: (_ns, _schema, _opts) => configForms,
     },
   }
   return ctx
