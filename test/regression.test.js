@@ -708,13 +708,13 @@ describe('group 15 security and settings audit (#190, #191, #192)', async () => 
     assert.strictEqual(isMaskedKey('plain-secret-key'), false);
   });
 
-  it('checks settingsScope binding in client.js (#191)', async () => {
+  it('checks configForms binding in client.js (#191)', async () => {
     const fsMod = await import('node:fs');
     const clientPath = path.join(repoRoot, 'lib/client.js');
     const clientCode = fsMod.readFileSync(clientPath, 'utf8');
 
-    assert.ok(clientCode.includes("'settingsScope'"), 'settingsScope included in exports.inject');
-    assert.ok(clientCode.includes('ctx.settingsScope.bind'), 'settingsScope.bind called in client');
+    assert.ok(clientCode.includes("'configForms'"), 'configForms included in exports.inject');
+    assert.ok(clientCode.includes('ctx.configForms.get'), 'configForms.get called in client');
     assert.ok(clientCode.includes('scope.subscribe'), 'scope.subscribe reactive listener present');
   });
 });
