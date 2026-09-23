@@ -42,4 +42,15 @@ describe('#352 journal ENOENT silence and persistence across restarts', () => {
     const withBaseDir = resolveStorageDir({ baseDir: '/dsh/home' }, {})
     assert.equal(withBaseDir, join('/dsh/home', 'data'))
   })
+
+  it('does not throw when Cordis proxy forbids accessing undeclared properties without inject', () => {
+    const cordisProxy = new Proxy({}, {
+      get(_target, prop) {
+        throw new Error(`cannot get property "${String(prop)}" without inject`)
+      }
+    })
+    const resolved = resolveStorageDir(cordisProxy, {})
+    assert.ok(typeof resolved === 'string')
+    assert.ok(resolved.length > 0)
+  })
 })
