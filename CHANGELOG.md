@@ -2,6 +2,11 @@
 
 Notable changes to `@goodandready/dsh-vision-bridge`.
 
+## 0.6.7
+
+### Fixed
+- **Cordis Proxy Property Guard**: Wrapped `dataDir` probing in `resolveStorageDir` safely to prevent `cannot get property "dataDir" without inject` exception on plugin activation under strict Cordis contexts (#352).
+
 ## 0.6.6
 
 ### Fixed
