@@ -2,6 +2,31 @@
 
 Notable changes to `@goodandready/dsh-vision-bridge`.
 
+## 0.6.6
+
+### Fixed
+- **UI Settings Row Seat & Bare Page Form**: Registered `plugins.row.config` first with canonical package key `@goodandready/dsh-vision-bridge#dsh-vision-bridge`, preserved `settings.plugin.item` as fallback, and added clean bare page rendering (`vbr-page`) (#335).
+- **Core Reliability & Security Hardening**:
+  - Declared `warnings` property in tool output schemas and sanitized `undefined` values for lossless JSON serialization (#340).
+  - Enforced strict bearer token and session origin validation in `isTrustedSettingsRequest` (#349).
+  - Rejected non-ok results in parallel race channel routing and added `AbortController` cancellation for losing requests (#341).
+  - Connected `smartOptimizeImage` into the runtime pipeline and respected user deskew/enhance configuration (#342).
+- **Storage & Journal Persistence**:
+  - Silenced spurious `ENOENT` logs on fresh start when journal/evidence files do not yet exist, and properly resolved the DSH data directory (#352).
+  - Made `EvidenceStore` and `VisionJournal` disk writes atomic via temporary file and rename, and unreferenced the flush timer to allow clean process termination (#347).
+  - Resolved `npm audit` dependency vulnerabilities (#338).
+
+### Performance
+- **Channel Consensus Concurrency**: Switched multi-channel consensus queries from sequential execution to parallel fetching with `Promise.allSettled`, cutting consensus latency dramatically (#343).
+- **Memory Bounds & LRU Eviction**:
+  - Bounded `descriptionByAttachmentId` to 300 entries with LRU eviction to prevent memory leak on long-running daemons (#344).
+  - Optimized `EvidenceStore` eviction from $O(N \log N)$ sorting to $O(1)$ natural Map insertion order (#347).
+  - Cached `sharp` availability check across operations to prevent dynamic import thrashing on environments without optional native bindings (#346).
+- **PDF Upload Roundtrip Optimization**: Eliminated multi-megabyte Base64 `dataUrl` payload and duplicate binary re-upload when importing PDF pages via `/upload-pdf` (#345).
+
+### Removed
+- Removed dead unused `_unused_makeT` function from `lib/client.js` (#348).
+
 ## 0.6.5
 
 ### Fixed
