@@ -684,8 +684,11 @@ describe('group 15 security and settings audit (#190, #191, #192)', async () => 
     assert.strictEqual(isTrustedSettingsRequest({ headers: {} }), false, 'rejects missing header without loopback');
     assert.strictEqual(isTrustedSettingsRequest({ headers: {}, socket: { remoteAddress: '127.0.0.1' } }), true, 'accepts loopback socket');
     assert.strictEqual(isTrustedSettingsRequest({ headers: {}, socket: { remoteAddress: '192.168.1.150' } }), false, 'rejects external ip');
-    assert.strictEqual(isTrustedSettingsRequest({ headers: { authorization: 'Bearer valid-token-12345' } }), true, 'accepts bearer token');
-    assert.strictEqual(isTrustedSettingsRequest({ headers: { cookie: 'token=xyz' } }), true, 'accepts auth cookie');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: { authorization: 'Bearer valid-token-12345' } }, 'valid-token-12345'), true, 'accepts matching bearer token');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: { authorization: 'Bearer invalid' } }, 'valid-token-12345'), false, 'rejects invalid bearer token');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: { authorization: 'Bearer x' } }), false, 'rejects bearer token without secret configured (#349)');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: { cookie: 'token=xyz' } }, 'xyz'), true, 'accepts matching auth cookie');
+    assert.strictEqual(isTrustedSettingsRequest({ headers: { cookie: 'token=xyz' } }), false, 'rejects auth cookie without secret configured (#349)');
     assert.strictEqual(isTrustedSettingsRequest({ headers: { origin: 'http://malicious.com', host: '127.0.0.1:3080' }, socket: { remoteAddress: '127.0.0.1' } }), false, 'rejects mismatched origin');
     assert.strictEqual(isTrustedSettingsRequest(null), false, 'rejects null request');
   });
