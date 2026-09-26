@@ -2,6 +2,16 @@
 
 Notable changes to `@goodandready/dsh-vision-bridge`.
 
+## 0.6.8
+
+### Security
+- **Strict Trusted Request Guard & Route Hardening**: Enforced loopback address verification (`127.0.0.1`, `::1`, `::ffff:127.0.0.1`) and Host header checks across all sensitive read routes (`/config`, `/channels`, `/models`, `/providers`, `/stats`, `/costs`, `/journal`, `/cache`, `/batch`, `/circuit`, `/telemetry`). Guarded `/doctor?probe=1` active ping probes from cross-site access, and enforced HTTP 405 Method Not Allowed on mutating endpoints (#308).
+- **Non-Secret Quota Key Derivation**: Replaced raw 8-character API key prefix exposure with stable SHA-256 fingerprint labels (`key#<hash>` or `<ref>#<hash>`) across streaming and non-streaming channel completion events to eliminate credential leakage in quota telemetry (#358).
+- **Bounded Request Body Reader**: Replaced unbounded request stream readers with `readBoundedBody()` enforcing strict size limits (512 KB for config/channel mutations, 1 MB for batch runs) and returning immediate HTTP 413 Payload Too Large on overflow to protect against denial of service (#359).
+
+### Packaging
+- **Release Tarball Footprint Cleanup**: Excluded internal `skills/` directory from npm package `files` allowlist, trimming distributed package from 38 to 29 production runtime files (#360).
+
 ## 0.6.7
 
 ### Fixed
