@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.12
+
+### Security & Hardening
+- **Session Isolation & Security Boundaries (Block 2)**:
+  - **Path Normalization & Directory Containment** (#373, #369, #376): Fixed boundary checks in `isPathAllowed` to normalize target paths and allowed directory boundaries, preventing traversal bypasses (`/allowed/dir/../../../../etc/passwd`). Added canonical `resolveInside(baseDir, candidatePath)` helper enforcing strict lexical containment and realpath ancestor/target bounds. Secured `vision_export_artifact` in `lib/tools/document.js` against path traversal and outside-workspace writes.
+  - **FS Boundaries & Permission Enforcement** (#380, #381): Moved `allowedImageDirs` check in `resolveSourceBytes()` ahead of DSH `fs` probe so unauthorized paths are not resolved or read by host services. Added `allowedImageDirs` validation to `vision_present`. Removed unsafe `node:fs` bypass in `vision_materialize` when `fs.writeBytes` fails or rejects.
+  - **Session & Agent Isolation** (#379): Implemented `SessionScopedAttachmentMap` and `extractSessionId()` helper to scope `attachmentById`, `descriptionByAttachmentId`, and `lastUserText` per agent session. Ensured missing-source lookups in `vision_inspect` and `describe_image` never leak attachments across agent sessions.
+  - **Channel Env Keys Resolution** (#382): Constrained API key resolution to configured `config.keysFromEnv` across all channel drivers (`runChannels`, `runChannel`, `runOpenAIChat`, `runCustom`, `runWebhook`, `runVLLM`), and restricted `resolveChannelApiKey()` and `liveChannels()` to authorized environment keys only.
+  - **Robust PNG Decoder & TypedArray Preprocessing** (#383, #384): Added full support for PNG `colorType === 4` (grayscale with alpha), validated bit depth (8) and color types (0, 2, 4, 6), enforced scanline length checks, and guarded against decompression bombs (>50MP) in `decodePng()`. Enabled `Uint8Array` support in `smartOptimizeImage()`, `decodePng()`, and `encodePng()`, ensuring DSH `fs.readBytes()` outputs undergo deskewing, resizing, and EXIF stripping without dropping optimizations.
+
+
 ## 0.6.11
 
 ### Fixed
