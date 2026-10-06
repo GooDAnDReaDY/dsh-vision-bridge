@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.13
+
+### Bug Fixes & Improvements
+- **Cache Identity, Bbox Normalization & Quality Metrics (Block 3)**:
+  - **Cache Identity & Null Safety** (#377, #378): Prevented `pHash` cache cross-contamination on identical images by generating perceptual cache keys incorporating prompt, model, mode, and promptVersion (`pHashKeyFor`). Guarded against null references in `descriptionByHash` when `config.cacheEnabled === false`.
+  - **Vision Crop Parsing & Attachment Cap** (#390, #409): Corrected numeric region parsing regex in `vision_crop` from `^s*\[?s*d` to `^\s*\[?\s*-?\d`, preventing unnecessary VLM grounding and rejecting invalid coordinates. Routed crop and annotate attachments through `recordAttachment()` to enforce the 300-entry capacity limit and prevent memory leaks.
+  - **Bbox Normalization Consistency** (#391): Removed dimension-based heuristics (>1000px vs <=1000px) and axis-swapping in `normalizeBbox()`. Standardized 0..1000 and 0..1 scale preservation across arbitrary resolutions with explicit pixel unit support.
+  - **Pixel Diff Alpha & Tolerance 0** (#392): Factored alpha channel differences (`da`) into pixel comparison. Honored explicit `tolerance: 0` without fallback to default 30. Fixed dimension mismatch counts to maintain consistent `totalPixels` and `diffPixels`, stripping undeclared schema properties.
+  - **Optimizer Auto Format & Deterministic Quality** (#393, #395): Fixed undeclared `auto` variable in `smartOptimizeImage()` image compression options. Enhanced `analyzeImageQuality()` to perform genuine decoding (PNG or via sharp for other supported formats) and throw on corrupt/invalid input instead of fabricating constant 50/50/100 fake metrics with undeclared note properties.
+
+
 ## 0.6.12
 
 ### Security & Hardening
