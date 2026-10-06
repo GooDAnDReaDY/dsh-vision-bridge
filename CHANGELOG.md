@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.11
+
+### Fixed
+- **Settings & Channels Persistence (Block 1)**:
+  - **Volatile Box Unwrapping** (#372, #368): Wrapped configuration in `apply()` and `resolveStorageDir()` with a proxy unboxing volatile Schemastery objects while preserving in-place mutations, correctly evaluating boolean switches (`consensusEnabled`, `selfCheckEnabled`), `keysFromEnv`, and `evidenceDir`.
+  - **Modern DSH Settings Service Adaptation** (#363, #370, #371): Adapted to modern DSH settings service (`describe()`, `update()`, `replace()`), removing reliance on removed `settings.register()`. Ensured `requireScope()` never throws (providing in-memory fallback) and removed unreachable return statement in `getLiveConfig()`.
+  - **Dynamic GET /config Defaults** (#411): Refactored `GET /config` endpoint to derive response defaults dynamically from the `Config` schema, eliminating ~25 hardcoded duplicate local variables and drift.
+  - **Channels Settings Persistence** (#374, #410): Added persistence to settings scope on `POST /channels` and `POST /config`, ensuring customized channel configurations survive DSH restarts. Restored unmasked API keys during round-trips with masked keys from the settings UI, and updated `liveChannels()` to query dynamic live configuration.
+
 ## 0.6.9
 
 ### Fixed
