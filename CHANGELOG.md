@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.6.14
+
+### Bug Fixes & Improvements
+- **Output Schemas, Truthfulness & Security Trust (Block 4)**:
+  - **Security Trust Check Hardening** (#375): Hardened `isTrustedSettingsRequest` in `lib/vision-core.js` by disallowing external network callers with spoofed `sec-fetch-site: same-origin` headers from bypassing authentication without a valid token.
+  - **Strict Tool Output Schemas** (#385): Updated `vision_diff` output schema to declare `warnings`, `parseWarning`, and `raw`, and normalized `differences` items strictly according to schema. Added `warnings` to `vision_consensus` output schema with consistent array return across all branches. Fixed `checkImageQuality` to return `blur: 'unknown'` (string) instead of `blur: 0` (number) and `score: 0` on errors or when sharp is unavailable.
+  - **Truthful Evaluation & Indeterminate Fallbacks** (#394): Fixed `vision_audit_accessibility` and `vision_verify_generated_image` to return `score: 0, passed: false` with explanatory warnings when vision model responses are invalid or non-JSON, preventing false-positive PASS85/90 verdicts. Enforced strict boolean parsing for `"false"` strings. Ensured `vision_consensus` reports `confidence: 0` and records discrepancies when available channels do not meet `minAgreement`.
+  - **Diagnostic Test Truthfulness** (#396): Ensured `callVisionModelWithBytes` returns `ok: false` and failure details when all channels fail in placeholder mode. Added `noCache: true` support for active diagnostics so test probes never receive cached responses. Updated `POST /dsh-vision-bridge/test` to report `ok: false` and error descriptions instead of false-positive `ok: true`.
+  - **Test Harness Modernization** (#401): Updated `test/harness.js` to model modern DSH 0.2 environments without retired `settings.register`, added strict tool output schema validation, and added `test/settings-contract.test.js` verifying settings contracts and schema conformance across all registered tools.
+
 ## 0.6.13
 
 ### Bug Fixes & Improvements
