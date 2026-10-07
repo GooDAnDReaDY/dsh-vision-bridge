@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.6.18
+
+### Bug Fixes & Improvements
+- **Diagnostics Logger & Facade Modularization (Block 8)**:
+  - **Host Diagnostics Logger Integration** (#366): Routed all host-side diagnostics and error reporting through the DSH plugin logger (`getLogger(ctx, 'vision-bridge')`) instead of bare `console.*` calls across `lib/image-processing.js`, `lib/vision-core.js`, `lib/tools/*`, and `lib/index.js`. Browser-side diagnostics in `lib/client.js` preserved intact. Added `test/366_host_logger_diagnostics.test.js` enforcing zero host-side `console.*` calls.
+  - **Modularization of Facade Monolith** (#412): Decomposed monolithic `lib/index.js` (previously ~1600 lines) into focused single-responsibility domain modules:
+    - `lib/agent-boundary.js`: `agent/pre-step` image sanitization, `llm/stream` backstop, and modality bridge.
+    - `lib/vision-pipeline.js`: multi-channel routing, model selection, pHash & LRU caching, and complexity classification.
+    - `lib/image-resolution.js`: attachment and filesystem image resolution (`resolveImageBytes` & `resolveSourceBytes`).
+    - `lib/journal-evidence.js`: in-flight batch manager, audit journal, and evidence persistence.
+    - `lib/storage.js`: storage directory resolution and persistence probing.
+    - `lib/provider-discovery.js`: Ollama and free provider auto-discovery.
+    - `lib/routes-deps.js`: HTTP route registrations wiring.
+    - Shrank `lib/index.js` down to 553 lines (< 800 lines criterion), maintaining 100% test coverage with 488 passing tests across 143 suites.
+
 ## 0.6.17
 
 ### Bug Fixes & Improvements
