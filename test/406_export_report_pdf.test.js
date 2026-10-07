@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { registerMediaTools } from '../lib/tools/media.js'
+import { isBinaryAvailable } from '../lib/process.js'
 
 test('issue #406: vision_export_report returns truthful markdown metadata', async () => {
   const registered = new Map()
@@ -29,7 +30,11 @@ test('issue #406: vision_export_report returns truthful markdown metadata', asyn
   assert.ok(res.report.includes('extracted text'))
 })
 
-test('issue #406: vision_export_report returns genuine PDF artifact when format=pdf', async () => {
+test('issue #406: vision_export_report returns genuine PDF artifact when format=pdf', async (t) => {
+  const chrome = process.env.CHROME_PATH || '/usr/bin/google-chrome'
+  if (!(await isBinaryAvailable(chrome))) {
+    return t.skip('headless Chrome not installed on this host')
+  }
   const registered = new Map()
   let savedAttachment = null
   const mockCtx = {

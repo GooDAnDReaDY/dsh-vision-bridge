@@ -4,6 +4,7 @@ import { writeFileSync, unlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { registerMediaTools, captureHtmlScreenshot } from '../lib/tools/media.js'
+import { isBinaryAvailable } from '../lib/process.js'
 
 function getPngDimensions(buf) {
   assert.ok(buf.length >= 24, 'PNG buffer must have at least 24 bytes')
@@ -13,7 +14,11 @@ function getPngDimensions(buf) {
   return { width, height }
 }
 
-test('issue #407: long HTML fixture verifies fullPage vs viewport screenshots', async () => {
+test('issue #407: long HTML fixture verifies fullPage vs viewport screenshots', async (t) => {
+  const chrome = process.env.CHROME_PATH || '/usr/bin/google-chrome'
+  if (!(await isBinaryAvailable(chrome))) {
+    return t.skip('headless Chrome not installed on this host')
+  }
   // Create a long HTML document fixture (> 2400px tall)
   const fixturePath = join(tmpdir(), `fixture-long-${Date.now()}.html`)
   const htmlContent = `<!DOCTYPE html>
