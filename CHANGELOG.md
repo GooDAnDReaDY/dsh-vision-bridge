@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.15
+
+### Bug Fixes & Improvements
+- **Channel Pipeline, Routing, Resilience & Cancellation (Block 5)**:
+  - **Host LLM Stream Dispatcher for dsh-catalog Channels** (#386): Implemented `dsh-catalog` channel driver in `lib/channels.js` to dispatch images and prompts via `ctx.llm.stream` with `VISION_PASS`, enabling native catalog models to function seamlessly within sequential, parallel-race, and consensus pipelines.
+  - **Unified Pipeline Routing for describe_image & VQA** (#387): Eliminated the split path in `describe_image` that bypassed `callVisionModelWithBytes` for non-generic questions, routing all image attachments through configured channels, image preprocessing, privacy masking, and circuit breaker policies. Routed `vision_vqa` through `callVisionModelWithBytes` and added `VISION_PASS` to `vision_compare` to prevent recursive stream interception.
+  - **Circuit Breaker & Auto-Latency State Persistence** (#388): Passed host persistent `channelCircuitStates` and `channelLatencies` maps into `runChannels`, ensuring circuit breaker failures/recoveries and latency measurements persist across calls and are visible to `GET /dsh-vision-bridge/circuit` and auto-latency sorting. Added `DELETE /dsh-vision-bridge/circuit` endpoint to reset breaker states.
+  - **Batch Cancellation & Lifecycle Cleanup** (#397): Connected `exec.signal` and batch lifetime to `AbortController` in `vision_batch`, ensuring aborted execution signals fail immediately before launching work. Ensured `DELETE /dsh-vision-bridge/batch/:id` aborts active provider streams and controllers immediately. Added `ctx.effect` unload disposer cancelling in-flight batches.
+  - **Evidence Store Debounce & Clean Shutdown Persistence** (#398): Added `flushSync()` and `dispose()` methods to `EvidenceStore` and registered `beforeExit`/`exit` process handlers and `ctx.effect` unload disposer, ensuring debounced persistence writes are flushed to disk on service restart, reload, or CLI exit.
+  - **Truthful Contract for vision_scan_barcode** (#405): Aligned `vision_scan_barcode` tool description and execution contract with actual visual model inspection reality, eliminating misleading "without VLM overhead" claims. Guaranteed truthful `{ found: false, codes: [] }` responses when no codes are detected.
+
 ## 0.6.14
 
 ### Bug Fixes & Improvements
