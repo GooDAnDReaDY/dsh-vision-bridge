@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.17
+
+### Bug Fixes & Improvements
+- **WebUI, Client Lifecycle & Contract Documentation (Block 7)**:
+  - **Chinese WebUI Localization & Slot Translator** (#399): Populated complete Chinese dictionary (`zh`) in `lib/client.js` with missing strategy, escalation, section, PDF toast, and lightbox labels. Enhanced `makeT` translator to delegate to companion `props.t` / slot translator first, support flexible parameter signatures, resolve active Chinese locales, and fall back to English. Wired translator down to `VisionCard`, `VisionSection`, and `VisionInputControls`.
+  - **Client Lifecycle & Clean Event Disposers** (#400): Wrapped `slots.inject` uninject callback in `ctx.effect` disposal hook. Implemented robust lightbox listener teardown on backdrop click, close button, or Escape key. Attached locale registration disposer to lifecycle cleanup. Cleaned up global `window` drag-and-drop listeners on unmount. Reset `applied` and internal flags on dispose.
+  - **PDF Import Composer Image Attachment Binding** (#408): Captured `props.inputActions` in composer controls and bound PDF page uploads directly to `inputActions.addAttachments(attachmentIds)` and fallback event `dsh:add-attachments`. Eliminated raw plaintext `[Attachment: ...]` string injection into `textarea.value`. Localized PDF conversion, success, and error toasts in English and Chinese while preserving `dataUrl` paste dispatch fallback.
+  - **Modern Design Contract & Slots Specification** (#402): Updated internal `docs/design/DESIGN.md` specification to mandate modern DSH 0.2 `plugins.row.config` (`@goodandready/dsh-vision-bridge#dsh-vision-bridge`) with `ctx.configForms` (`update()`, `page`/`summary` views), keeping `settings.plugin.item` strictly as legacy fallback. Updated test inventory to 486+ tests across 143+ suites. Preserved owner policy excluding internal `docs/` from git and npm distribution.
+  - **GitHub Mirror Parity** (#403): Verified public GitHub mirror parity with npm release at 0.6.16.
+  - **CI Host Binary Guards**: Guarded optional host Chrome and Tesseract OCR executions in test suites 404, 406, and 407 to skip gracefully in containerized CI environments without external binaries, adhering to repository `#257` standard.
+
 ## 0.6.16
 
 ### Bug Fixes & Improvements
