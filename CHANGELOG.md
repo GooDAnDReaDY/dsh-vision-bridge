@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.6.16
+
+### Bug Fixes & Improvements
+- **Agent Tools & Export Correctness (Block 6)**:
+  - **Canonical English OCR Default & Language Discovery** (#404): Replaced hardcoded `rus+eng` / `eng+rus` language defaults in `runLocalOCR`, `vision_ocr`, and `vision_ocr_local` with canonical English (`'eng'`). Added dynamic host capabilities discovery via `getTesseractLanguages()` (`tesseract --list-langs`). Added normalization and aliases for Chinese language packs (`zh`, `zh-cn`, `chinese` -> `chi_sim`, `zh-tw` -> `chi_tra`). Provided graceful fallback to vision LLM with informative warnings when requested language packs are missing in `vision_ocr`, and truthful reporting in `vision_ocr_local`. Added `ocrLang` configuration option.
+  - **Truthful Contract for vision_export_report** (#406): Fixed `vision_export_report` when given `format: 'pdf'` to generate genuine `%PDF-` document artifacts via headless Chrome, publishing the artifact with `report.pdf` filename and `application/pdf` mediaType. Aligned `output.schema` (`report`, `format`, `filename`, `mediaType`, `attachmentId`), and enforced strict format validation rejecting unsupported formats with clear errors.
+  - **Full-Page Screenshot Beyond Fixed Viewport** (#407): Enhanced `vision_html_screenshot` to honor `fullPage: true` by measuring document `scrollHeight` dynamically and capturing the complete document beyond the fixed 1024 viewport height using Chrome CDP (`Page.captureScreenshot`, `captureBeyondViewport`). Kept standard 1024 viewport clipping when `fullPage === false`.
+
 ## 0.6.15
 
 ### Bug Fixes & Improvements
