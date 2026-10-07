@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { resolveOcrLanguage, registerOcrTools } from '../lib/tools/ocr.js'
 import { runLocalOCR } from '../lib/vision-core.js'
-import { getTesseractLanguages } from '../lib/process.js'
+import { getTesseractLanguages, isBinaryAvailable } from '../lib/process.js'
 
 test('issue #404: resolveOcrLanguage canonical defaults and language mappings', () => {
   // Default must be eng, never rus or eng+rus
@@ -62,7 +62,10 @@ test('issue #404: vision_ocr and vision_ocr_local parameter specs have no Russia
   assert.ok(!localLangDesc.includes('default eng+rus'), 'vision_ocr_local description must not default to eng+rus')
 })
 
-test('issue #404: vision_ocr falls back to vision LLM when requested tesseract pack is missing', async () => {
+test('issue #404: vision_ocr falls back to vision LLM when requested tesseract pack is missing', async (t) => {
+  if (!(await isBinaryAvailable('tesseract'))) {
+    return t.skip('tesseract not installed on this host')
+  }
   const registered = new Map()
   let llmPromptCalled = false
   const mockCtx = {
@@ -93,7 +96,10 @@ test('issue #404: vision_ocr falls back to vision LLM when requested tesseract p
   assert.ok(llmPromptCalled, 'Vision LLM was called')
 })
 
-test('issue #404: vision_ocr_local reports unavailable language pack truthfully', async () => {
+test('issue #404: vision_ocr_local reports unavailable language pack truthfully', async (t) => {
+  if (!(await isBinaryAvailable('tesseract'))) {
+    return t.skip('tesseract not installed on this host')
+  }
   const registered = new Map()
   const mockCtx = {
     tools: {
