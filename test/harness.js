@@ -1,3 +1,48 @@
+
+export function validateToolOutput(value, schema, toolName = 'tool') {
+  if (!schema) return
+  if (schema.type === 'object') {
+    if (typeof value !== 'object' || value === null) {
+      throw new Error(`Tool "${toolName}" output must be a non-null object, got ${value === null ? 'null' : typeof value}`)
+    }
+    if (schema.additionalProperties === false && schema.properties) {
+      for (const k of Object.keys(value)) {
+        if (!schema.properties[k]) {
+          throw new Error(`Tool "${toolName}" returned undeclared property "${k}" violating additionalProperties: false`)
+        }
+      }
+    }
+    if (schema.properties) {
+      for (const [k, propSchema] of Object.entries(schema.properties)) {
+        if (value[k] !== undefined) {
+          validateToolOutput(value[k], propSchema, `${toolName}.${k}`)
+        }
+      }
+    }
+  } else if (schema.type === 'array') {
+    if (!Array.isArray(value)) {
+      throw new Error(`Tool "${toolName}" output must be an array, got ${typeof value}`)
+    }
+    if (schema.items) {
+      for (let i = 0; i < value.length; i++) {
+        validateToolOutput(value[i], schema.items, `${toolName}[${i}]`)
+      }
+    }
+  } else if (schema.type === 'string') {
+    if (typeof value !== 'string') {
+      throw new Error(`Tool "${toolName}" expected string, got ${typeof value}`)
+    }
+  } else if (schema.type === 'number') {
+    if (typeof value !== 'number' || Number.isNaN(value)) {
+      throw new Error(`Tool "${toolName}" expected finite number, got ${Number.isNaN(value) ? 'NaN' : typeof value}`)
+    }
+  } else if (schema.type === 'boolean') {
+    if (typeof value !== 'boolean') {
+      throw new Error(`Tool "${toolName}" expected boolean, got ${typeof value}`)
+    }
+  }
+}
+
 // Minimal cordis-like mock context so lib/index.js apply() runs without the
 // DSH host (#205). Everything is in-memory; no network and no sharp required.
 // Effects are executed immediately (so webServer routes and the modality
@@ -122,6 +167,16 @@ export function createMockCtx(options = {}) {
     tools: {
       register: (def) => {
         toolNames.push(def.name)
+        if (options.validateOutput === true && def.execute && def.output?.schema) {
+          const originalExecute = def.execute
+          def.execute = async (...args) => {
+            const result = await originalExecute(...args)
+            if (result !== undefined && result !== null) {
+              validateToolOutput(result, def.output.schema, def.name)
+            }
+            return result
+          }
+        }
         toolDefs.set(def.name, def)
       },
     },
@@ -131,9 +186,16 @@ export function createMockCtx(options = {}) {
         return def
       },
     },
-    settings: {
-      register: (_ns, _schema, _opts) => configForms,
-    },
+    settings: options.dshLine === '0.1'
+      ? {
+          register: (_ns, _schema, _opts) => configForms,
+          scope: (_ns) => configForms,
+        }
+      : {
+          scope: (_ns) => configForms,
+          get: () => config,
+          update: async (patch) => { Object.assign(config, patch) },
+        },
   }
   return ctx
 }
