@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.6.19
+
+### Bug Fixes & Improvements
+- **Audit Verification Residual Defect Resolution** (#429):
+  - **Settings Persistence Reflection & Volatile Metadata** (#363, #374, #401): Marked all 49 configurable fields in `lib/vision-core.js` `Config` schema with `.volatile()` to ensure reliable DSH API configuration persistence. Reflected persistence capability (`persisted: true/false`) in `GET /dsh-vision-bridge/config`.
+  - **Symlink Traversal Containment in `resolveInside`** (#369, #373, #376): Refactored `resolveInside` in `lib/vision-core.js` to isolate `realpathSync` lookups, ensuring path traversal escaping the target boundary throws clear `Path escapes directory` errors rather than getting suppressed by `ENOENT` handling.
+  - **Cache Key Parameter Granularity for `detail`** (#377): Added `detail` (`auto`/`low`/`high`) into the cache key derivation in `lib/cache.js` and `lib/vision-pipeline.js`, ensuring detail variations do not collide or share cache entries.
+  - **Suppression of Local Disk Bypass on DSH FS Denial** (#380): In `lib/image-resolution.js`, when `dshFs.readBytes` fails or denies access, immediately return `null` instead of falling back to direct `readFileSync` from local storage.
+  - **PNG Decoder Hardening** (#383): Enhanced `decodePng` in `lib/image-processing.js` with `zlib.crc32` validation for IDAT chunks, rejection of invalid `filter` values (< 0 or > 4) and unsupported interlacing (`interlace > 0`), and enforcement of maximum decompressed byte boundaries.
+  - **Accurate Preprocessed State Reporting** (#384): In `lib/image-processing.js` `smartOptimizeImage`, report `preprocessed: false` and surface descriptive warnings when downscaling is requested but `sharp` is unavailable.
+  - **Execution Context Session Isolation** (#379): Extracted execution context `sessionId` across analysis, OCR, document, and grounding tools (`lib/tools/analysis.js`, `lib/tools/grounding.js`, `lib/tools/document.js`, `lib/tools/ocr.js`) and passed it to `attachmentById.get(id, sessionId)` to prevent cross-session attachment leaks.
+  - **Multi-Channel Provider Routing in `vision_compare`** (#387): Routed `vision_compare` through `callVisionModelWithBytes`, honoring configured HTTP providers and channel fallbacks instead of bypassing to catalog streams.
+  - **Strict Boolean Type Validation for Tool Assessments** (#394): Enforced `typeof parsed.passed === 'boolean'` in `vision_audit_accessibility` and `vision_verify_generated_image`, rejecting string `"true"`/`"false"` evaluations.
+  - **Comprehensive Regression Suite**: Added `test/429_audit_residual_fixes.test.js` validating all 9 domain defect areas, bringing full test suite to 497 green tests across 144 suites.
+
 ## 0.6.18
 
 ### Bug Fixes & Improvements
