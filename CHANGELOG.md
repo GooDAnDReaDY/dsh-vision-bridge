@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.6.20
+
+### Bug Fixes & Improvements
+- **Channels Persistence Error Propagation & Rollback Safety** (#432):
+  - In `POST /dsh-vision-bridge/channels`, eliminated swallowed exception (`/* best-effort settings persistence */ void err`) when `scope.set('channels', ...)` fails.
+  - Added structured error logging via `logger.error` when channel persistence rejects.
+  - Reverted in-memory `config.channels` to previous state upon persistence rejection, preventing silent state divergence between memory and disk storage.
+  - Propagated HTTP 500 error (`{ error: 'Failed to persist channels configuration', details: ... }`) to the client instead of returning false HTTP 200 success.
+  - Added `persisted: Boolean(...)` reflection in the 200 response and bound it to client badge warnings in `lib/client.js` (`notPersisted` in English and Chinese).
+  - Added regression test suite in `test/issue-410-channels-persistence.test.js` validating HTTP 500 failure reporting, state rollback, error logging, and storage unavailability reflection.
+
 ## 0.6.19
 
 ### Bug Fixes & Improvements
