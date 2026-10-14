@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.6.21] - 2026-10-14
+### Changed
+- **Client Settings Slot Modernization**: Retired dead `settings.plugin.item` slot registration from `lib/client.js`, keeping live modern DSH core seats `plugins.row.config` (row seat) and `plugins.item` (Plugins list seat) (#435).
+- **Storage Directory Containment**: Constrained relative `evidenceDir` in `lib/storage.js` (`resolveStorageDir`) to base storage directory via `resolveInside`, preventing unconstrained path traversal (#435).
+- **Test Suite Modernization**: Updated test inventory to 505 green tests across 145 test suites, validating retired slot absence and path traversal containment.
+
 ## 0.6.20
 
 ### Bug Fixes & Improvements
