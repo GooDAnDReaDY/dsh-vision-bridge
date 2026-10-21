@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.6.22] - 2026-10-21
+### Refactored
+- **Core Domain Decomposition** (#438):
+  - Partitioned monolithic `lib/vision-core.js` (1317 lines) into four cohesive domain modules:
+    - `lib/vision-config.js` (338 lines): Schemas (`Config`), `wrapConfig`, `plainConfig`, plugin metadata (`name`, `inject`), model capability predicates (`sanitizeAllowed`, `shouldBridgeForModel`, `acceptsImages`, `blocksHaveImage`).
+    - `lib/security.js` (439 lines): Settings authentication, loopback/origin verification, key masking and derivation (`deriveKeyLabel`), path containment (`resolveInside`, `isPathAllowed`), SSRF protection (`safeFetch`, `isSafeFetchUrl`, `isPrivateIp`), and bounded body reading (`readBoundedBody`).
+    - `lib/providers.js` (33 lines): Provider definitions (`FREE_VISION_PROVIDERS`) and key resolution (`resolveChannelApiKey`).
+    - `lib/media-utils.js` (504 lines): Sharp transforms (`compressImage`, `stripEXIF`, `deskewImage`, `enhanceImage`), OCR (`runLocalOCR`), image inspection (`imageDimensions`, `scaleBbox`, `collectText`), perceptual and content hashes (`contentHash`, `pHash`), and session-scoped attachment isolation (`SessionScopedAttachmentMap`).
+  - Reduced `lib/vision-core.js` to a 14-line transparent facade re-exporting 100% of symbols for backwards compatibility with zero consumer disruption.
+  - All hand-written modules strictly comply with the `<= 600` lines limit.
+  - Added domain verification suite in `test/438_vision_core_domains.test.js` bringing total passing tests to 509 across 145 suites.
+
 ## [0.6.21] - 2026-10-14
 ### Changed
 - **Client Settings Slot Modernization**: Retired dead `settings.plugin.item` slot registration from `lib/client.js`, keeping live modern DSH core seats `plugins.row.config` (row seat) and `plugins.item` (Plugins list seat) (#435).
