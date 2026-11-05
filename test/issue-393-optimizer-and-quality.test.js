@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import { smartOptimizeImage, analyzeImageQuality, encodePng } from '../lib/image-processing.js'
+import { loadSharp } from '../lib/media-utils.js'
 
 describe('Issue #393 & #395: Optimizer Auto Format & Deterministic Image Quality', () => {
   it('Issue #393: smartOptimizeImage without format option does not crash on undeclared auto', async () => {
@@ -19,7 +20,8 @@ describe('Issue #393 & #395: Optimizer Auto Format & Deterministic Image Quality
     })
 
     assert.ok(opt.bytes)
-    assert.equal(opt.preprocessed, true)
+    const sharpAvailable = Boolean(await loadSharp())
+    assert.equal(opt.preprocessed, sharpAvailable)
     const hasAutoError = (opt.warnings || []).some(w => w.includes('auto is not defined'))
     assert.equal(hasAutoError, false, 'Must not encounter ReferenceError: auto is not defined')
   })

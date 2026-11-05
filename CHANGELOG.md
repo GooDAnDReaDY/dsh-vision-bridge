@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.6.23] - 2026-11-05
+### Added
+- **Composer Buttons Visibility Toggles** (#442):
+  - Added independent configuration options `showVisionModeButton` (boolean, default: `true`) and `showPdfButton` (boolean, default: `true`), along with `showModeButton` alias.
+  - Exposed switches in `VisionSection` settings card with full `en` and `zh` localizations.
+  - Enabled live client reactivity in `VisionInputControls` (`conversation.input.right`) via `ctx.configForms` and `dsh-vision-bridge:config-changed` custom event, without restarting host or reloading page.
+  - Hiding composer buttons cleanly returns `null` while preserving global PDF drag-and-drop file ingestion, active vision mode, and all registered vision tools.
+  - Added test suite in `test/442_composer_buttons_visibility.test.js` (13 tests) and fixed sharp dependency assertion in `test/issue-393-optimizer-and-quality.test.js` for clean CI execution.
+
 ## [0.6.22] - 2026-10-21
 ### Refactored
 - **Core Domain Decomposition** (#438):
